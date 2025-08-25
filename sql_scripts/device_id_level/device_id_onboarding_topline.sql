@@ -123,7 +123,15 @@ SELECT r1.tag
         -- Treatment group statistics (r1)
         , r1.std_variable_profit AS std_variable_profit
         , r1.std_gov AS std_gov
-        -- Control group statistics (r2)
+        -- Control group statistics (r2) for rate variables
+        , r2.order_rate AS control_order_rate
+        , r2.new_cx_rate AS control_new_cx_rate
+        , r2.variable_profit AS control_VP  -- For Lift_VP calculation
+        , r2.VP_per_device AS control_VP_per_device
+        , r2.gov_per_device AS control_gov_per_device
+        , r2.mau_rate AS control_mau_rate
+        , r2.variable_profit AS control_variable_profit
+        , r2.gov AS control_gov
         , r2.std_variable_profit AS control_std_variable_profit
         , r2.std_gov AS control_std_gov
         , r2.n_orders_for_stats AS control_n_orders

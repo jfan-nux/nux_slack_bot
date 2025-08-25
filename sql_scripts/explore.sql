@@ -1,12 +1,14 @@
-drop table if exists proddb.fionafan.experiment_metrics_results;
+-- drop table if exists proddb.fionafan.experiment_metrics_results;
 select * from proddb.fionafan.experiment_metrics_results 
 where insert_timestamp = (select max(insert_timestamp) from proddb.fionafan.experiment_metrics_results) ;
 -- and statsig_string = 'insufficient_data';
 
-select template_name, metric_name, lift, p_value, statsig_string, desired_direction
+select 
+template_name, metric_name, treatment_value, control_value, lift, p_value, statsig_string, desired_direction,
 from proddb.fionafan.experiment_metrics_results 
 where insert_timestamp = (select max(insert_timestamp) from proddb.fionafan.experiment_metrics_results) 
 and experiment_name = 'should_pin_leaderboard_carousel'
+-- and template_name = 'app_download'
 order by experiment_name, template_rank, metric_rank
 -- and template_rank is null or metric_rank is null
 ;
