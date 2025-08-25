@@ -1,0 +1,27 @@
+# Manual list of experiments to process
+# Updated with correct experiment_name values for Snowflake queries
+# if segments is missing then it includes all segments
+
+experiments:
+  should_pin_leaderboard_carousel:
+    project_name: "Leaderboards uprank"
+    experiment_name: "should_pin_leaderboard_carousel"
+    description: "Uprank to feed"
+    start_date: "2025-08-21"
+    end_date: "2025-09-30"
+    bucket_key: "consumer_id"
+    template: "onboarding"
+    segments: ["Users"]
+    version: 1
+    expired: false
+  cx_mobile_onboarding_preferences:
+    project_name: "Onboarding in-line"
+    experiment_name: "cx_mobile_onboarding_preferences"
+    description: "In-line pages (select 3 from each page: cuisines, dietary restrictions, food categories) - MS1 of this will be part of res onboarding - Further investment pending personalization insights"
+    start_date: "2025-08-18"
+    end_date: "2025-09-30"
+    bucket_key: "device_id"
+    template: "onboarding"
+    version: 1
+    expired: false
+  
