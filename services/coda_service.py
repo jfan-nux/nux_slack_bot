@@ -32,7 +32,7 @@ class CodaService:
     
     def scrape_q3_roadmap(self, coda_url: str) -> Dict[str, Any]:
         """
-        Scrape the Q3 2025 Roadmap overview from Coda.
+        Scrape the Q3 2025 Roadmap overview from Coda using scoped token approach.
         
         Args:
             coda_url: Full Coda URL to the roadmap document
@@ -40,17 +40,127 @@ class CodaService:
         Returns:
             Dictionary containing scraped roadmap data with metadata
         """
-        logger.info("Starting Q3 2025 Roadmap scrape from Coda")
+        logger.info("Starting Q3 2025 Roadmap scrape from Coda (scoped token mode)")
         
         try:
-            # Scrape the "Q3 2025 Roadmap overview" table
-            raw_data = self.client.scrape_table_by_url_and_name(
-                coda_url, 
-                "Q3 2025 Roadmap overview"
-            )
+            # Parse URL to get doc_id and view_id
+            url_parts = self.client.parse_coda_url(coda_url)
+            doc_id = url_parts['doc_id']
             
-            # Add scraping timestamp
-            raw_data['scraped_at'] = datetime.now().isoformat()
+            logger.info(f"Using doc_id: {doc_id}")
+            
+            # Try resolveBrowserLink first to get the correct resource
+            logger.info("Attempting to resolve browser link to get correct table/view ID")
+            try:
+                resolve_response = self.client._make_request(
+                    'GET', 
+                    '/resolveBrowserLink',
+                    params={'url': coda_url}
+                )
+                
+                resource = resolve_response.get('resource', {})
+                if resource.get('type') == 'table':
+                    table_id = resource.get('id')
+                    logger.info(f"✅ Resolved to table ID: {table_id}")
+                else:
+                    # Fallback to URL fragment
+                    table_id = url_parts.get('view_id', 'Q3-2025-Roadmap-overview_tuWR35uZ')
+                    logger.info(f"Using fallback view_id: {table_id}")
+                
+            except Exception as e:
+                logger.warning(f"resolveBrowserLink failed: {e}, using fallback")
+                table_id = url_parts.get('view_id', 'Q3-2025-Roadmap-overview_tuWR35uZ')
+            
+            # Skip doc info check for scoped tokens and go directly to table data
+            doc_info = {'id': doc_id, 'name': 'Q3 2025 NUX Roadmap'}
+            
+            # Use the exact API pattern from Coda documentation
+            logger.info(f"Accessing table rows directly using table_id: {table_id}")
+            
+            # Make the request exactly as shown in Coda API docs with additional debugging
+            import requests
+            headers = {
+                'Authorization': f'Bearer {self.client.api_key}',
+                'Content-Type': 'application/json',
+                'User-Agent': 'nux-slack-bot/1.0',
+                'X-Coda-Doc-Version': 'latest'  # Ensure up-to-date data per API docs
+            }
+            uri = f'https://coda.io/apis/v1/docs/{doc_id}/tables/{table_id}/rows'
+            params = {
+                'limit': 5,  # Start small for debugging
+                'useColumnNames': True,
+                'valueFormat': 'simple'
+            }
+            
+            logger.info(f"Making API request with headers: {dict(headers)}")
+            logger.info(f"URI: {uri}")
+            logger.info(f"Params: {params}")
+            
+            try:
+                response = requests.get(uri, headers=headers, params=params, timeout=30)
+                
+                logger.info(f"Response status: {response.status_code}")
+                logger.info(f"Response headers: {dict(response.headers)}")
+                
+                if response.status_code == 200:
+                    rows_response = response.json()
+                    logger.info(f"✅ SUCCESS! Got {len(rows_response.get('items', []))} rows")
+                elif response.status_code == 401:
+                    logger.error(f"401 Unauthorized - API token invalid: {response.text}")
+                    raise Exception(f"API token is invalid or expired: {response.text}")
+                elif response.status_code == 403:
+                    logger.error(f"403 Forbidden - No access: {response.text}")
+                    raise Exception(f"API token does not grant access to this resource: {response.text}")
+                elif response.status_code == 404:
+                    logger.error(f"404 Not Found - Table not found: {response.text}")
+                    
+                    # Try alternative approach: use the view_id directly from URL
+                    logger.info("Trying alternative approach with original view_id from URL...")
+                    alt_table_id = url_parts.get('view_id', 'Q3-2025-Roadmap-overview_tuWR35uZ')
+                    alt_uri = f'https://coda.io/apis/v1/docs/{doc_id}/tables/{alt_table_id}/rows'
+                    
+                    logger.info(f"Alternative URI: {alt_uri}")
+                    alt_response = requests.get(alt_uri, headers=headers, params=params, timeout=30)
+                    
+                    if alt_response.status_code == 200:
+                        rows_response = alt_response.json()
+                        logger.info(f"✅ Alternative approach SUCCESS! Got {len(rows_response.get('items', []))} rows")
+                    else:
+                        logger.error(f"Alternative also failed: {alt_response.status_code} - {alt_response.text}")
+                        raise Exception(f"Table access failed with both IDs: resolved={table_id}, original={alt_table_id}")
+                        
+                elif response.status_code == 429:
+                    raise Exception(f"Rate limit exceeded: {response.text}")
+                else:
+                    logger.error(f"Unexpected status {response.status_code}: {response.text}")
+                    raise Exception(f"API error {response.status_code}: {response.text}")
+                    
+            except requests.exceptions.RequestException as e:
+                logger.error(f"Network error: {e}")
+                raise Exception(f"Network error: {e}")
+            
+            # Process the successful response
+            rows = rows_response.get('items', [])
+            logger.info(f"✅ Successfully fetched {len(rows)} rows from table")
+            
+            # Transform rows to expected format
+            transformed_rows = []
+            for row in rows:
+                row_data = {'row_id': row.get('id')}
+                row_data.update(row.get('values', {}))
+                transformed_rows.append(row_data)
+            
+            # Create raw_data structure
+            raw_data = {
+                'doc_info': doc_info,
+                'table_info': {
+                    'id': table_id,
+                    'name': 'Q3 2025 Roadmap overview',
+                    'row_count': len(transformed_rows)
+                },
+                'rows': transformed_rows,
+                'scraped_at': datetime.now().isoformat()
+            }
             
             # Transform the data for our database schema
             transformed_projects = self.transform_roadmap_data(raw_data['rows'])
@@ -263,7 +373,7 @@ if __name__ == "__main__":
     service = CodaService()
     
     # Test scraping the Q3 roadmap
-    coda_url = "https://coda.io/d/nux-product_dn6rnftKCGZ/Q3-2025_su5L-0_F#Q3-2025-Roadmap-overview_tuWR35uZ/r621&columnId=c-QNPzuvsx3k"
+    coda_url = "https://coda.io/d/nux-product_dn6rnftKCGZ/Q3-2025_su5L-0_F#Q3-2025-Roadmap-overview_tuWR35uZ"
     
     try:
         result = service.scrape_q3_roadmap(coda_url)

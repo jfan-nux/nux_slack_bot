@@ -116,7 +116,7 @@ class SnowflakeHook:
         """
         # First check for environment variables from shell profile for username and password
         # These take highest priority
-        env_file_path = Path(__file__).parent.parent / "config" / ".env"
+        env_file_path = Path(__file__).parent.parent / ".env"
         load_dotenv(dotenv_path=env_file_path, override=True)
         self.user = username or os.getenv("SNOWFLAKE_USER")
         self.database = database or os.getenv("SNOWFLAKE_DATABASE", "proddb")
@@ -688,3 +688,48 @@ class SnowflakeHook:
         """
         self.query_without_result(f"DROP TABLE IF EXISTS {table_name}")
         logger.info(f"Successfully dropped table {table_name}")
+
+
+# Convenience function for experiment runner compatibility
+def execute_snowflake_query(query: str, method: str = 'pandas'):
+    """
+    Execute a Snowflake query using the default hook configuration.
+    Optimized for parallel execution with pandas-only mode.
+    
+    Args:
+        query: SQL query to execute
+        method: Query execution method (forced to 'pandas' for stability)
+    
+    Returns:
+        Query results as list of dictionaries
+    """
+    # Force pandas mode for reliability and parallel execution
+    # Avoid Spark/Java issues in concurrent environment
+    method = 'pandas'
+    
+    # Use optimized SnowflakeHook configuration for parallel execution
+    hook_config = {
+        'create_local_spark': False,  # Disable Spark entirely
+        'use_persistent_spark': False,  # No Spark session needed
+    }
+    
+    with SnowflakeHook(**hook_config) as hook:
+        try:
+            result_df = hook.query_snowflake(query, method=method)
+            
+            # Convert DataFrame to list of dictionaries for compatibility
+            if hasattr(result_df, 'to_dict'):
+                # pandas DataFrame - standard path
+                return result_df.to_dict('records')
+            else:
+                # Fallback for unexpected return types
+                logger.warning(f"Unexpected result type: {type(result_df)}")
+                try:
+                    return result_df.to_pandas().to_dict('records')
+                except:
+                    return []
+                    
+        except Exception as e:
+            logger.error(f"Error executing Snowflake query: {str(e)}")
+            # Re-raise the exception so calling code can handle it appropriately
+            raise
