@@ -25,8 +25,8 @@ class ExperimentAnalysis:
         """Two-proportion z-test for rate metrics"""
         
         # Ensure we have required data
-        if not all([metric.treatment_numerator, metric.treatment_denominator,
-                   metric.control_numerator, metric.control_denominator]):
+        if not all([metric.treatment_numerator is not None, metric.treatment_denominator,
+                   metric.control_numerator is not None, metric.control_denominator]):
             return
         
         # Convert to numeric types
@@ -35,9 +35,33 @@ class ExperimentAnalysis:
         x2 = float(metric.control_numerator)  # control successes
         n2 = float(metric.control_denominator)  # control total
         
+        # Check for edge cases where statistical tests are not meaningful
+        total_events = x1 + x2
+        min_sample_size = min(n1, n2)
+        
+        # If both groups have 0 events, no meaningful difference to test
+        if total_events == 0:
+            metric.p_value = 1.0  # No significant difference
+            metric.confidence_interval_lower = 0.0
+            metric.confidence_interval_upper = 0.0
+            # Set values for completeness
+            metric.treatment_value = 0.0
+            metric.control_value = 0.0
+            return
+        elif total_events < 5 or min_sample_size < 10:
+            # Too few events for reliable normal approximation - use more conservative approach
+            # For very low counts, still calculate but be more conservative
+            pass  # Continue with normal calculation but results should be interpreted carefully
+        
         # Calculate proportions
         p1 = x1 / n1
         p2 = x2 / n2
+        
+        # Update metric values if not already set
+        if metric.treatment_value is None:
+            metric.treatment_value = p1
+        if metric.control_value is None:
+            metric.control_value = p2
         
         # Pooled proportion for standard error
         p_pooled = (x1 + x2) / (n1 + n2)

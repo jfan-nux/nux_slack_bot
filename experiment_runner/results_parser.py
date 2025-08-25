@@ -185,20 +185,31 @@ def find_control_row(results: List[dict], dimension_value: Optional[str],
 def determine_metric_type(metric_name: str, treatment_row: dict, control_row: Optional[dict]) -> str:
     """Determine if metric is 'rate' or 'continuous'"""
     
-    # Rate metrics typically end with '_rate' or have 'completion', 'pct'
-    rate_indicators = ['_rate', '_pct', 'completion', 'signup', 'download']
+    # Explicit continuous variables (have std values, are monetary/count metrics)
+    continuous_vars = ['vp', 'vp_per_device', 'gov', 'gov_per_device', 'variable_profit', 'subtotal']
+    if metric_name.lower() in continuous_vars:
+        return 'continuous'
     
+    # Check if this metric has std columns (strong indicator of continuous)
+    metric_name_mapping = {
+        'vp': 'variable_profit',
+        'vp_per_device': 'variable_profit',
+        'gov': 'gov', 
+        'gov_per_device': 'gov'
+    }
+    std_column_name = metric_name_mapping.get(metric_name, metric_name)
+    
+    if treatment_row and f"std_{std_column_name}" in treatment_row:
+        return 'continuous'
+    if control_row and f"control_std_{std_column_name}" in control_row:
+        return 'continuous'
+        
+    # Rate indicators in metric name  
+    rate_indicators = ['_rate', '_pct', 'completion', 'signup', 'download']
     if any(indicator in metric_name.lower() for indicator in rate_indicators):
         return 'rate'
     
-    # Continuous metrics typically have std columns
-    if treatment_row and f"std_{metric_name}" in treatment_row:
-        return 'continuous'
-    
-    if control_row and f"control_std_{metric_name}" in control_row:
-        return 'continuous'
-    
-    # Additional heuristics
+    # Additional continuous patterns
     continuous_patterns = ['avg_', 'total_', 'sum_', 'subtotal', 'profit', 'gov']
     if any(pattern in metric_name.lower() for pattern in continuous_patterns):
         return 'continuous'
@@ -214,27 +225,115 @@ def extract_metric_data(row: Optional[dict], metric_name: str, arm_type: str) ->
     data = {}
     prefix = 'control_' if arm_type == 'control' else ''
     
-    # Try to find the base metric value
-    if f"{prefix}{metric_name}" in row:
-        data['value'] = row[f"{prefix}{metric_name}"]
+    # Try to find the base metric value with enhanced mapping
+    # Map metric names to actual SQL column names
+    value_mapping = {
+        'vp': 'variable_profit',
+        'vp_per_device': 'vp_per_device',
+        'gov': 'gov',
+        'gov_per_device': 'gov_per_device'
+    }
+    
+    # Import pandas for nan checking
+    try:
+        import pandas as pd
+    except ImportError:
+        import numpy as np
+        pd = np
+    
+    # Get the actual column name for value lookup
+    value_column_name = value_mapping.get(metric_name, metric_name)
+    
+    if f"{prefix}{value_column_name}" in row:
+        value = row[f"{prefix}{value_column_name}"]
+        # Handle nan values
+        if pd.isna(value) or (isinstance(value, str) and value.lower() == 'nan'):
+            data['value'] = None
+        else:
+            data['value'] = value
+    elif f"{prefix}{metric_name}" in row:
+        value = row[f"{prefix}{metric_name}"]
+        if pd.isna(value) or (isinstance(value, str) and value.lower() == 'nan'):
+            data['value'] = None 
+        else:
+            data['value'] = value
+    elif value_column_name in row:
+        value = row[value_column_name]
+        if pd.isna(value) or (isinstance(value, str) and value.lower() == 'nan'):
+            data['value'] = None
+        else:
+            data['value'] = value
     elif metric_name in row:
-        data['value'] = row[metric_name]
+        value = row[metric_name]
+        if pd.isna(value) or (isinstance(value, str) and value.lower() == 'nan'):
+            data['value'] = None
+        else:
+            data['value'] = value
     
     # For rate metrics, look for numerator/denominator patterns
-    if '_rate' in metric_name:
-        base_metric = metric_name.replace('_rate', '')
+    if '_rate' in metric_name or '_pct' in metric_name:
+        base_metric = metric_name.replace('_rate', '').replace('_pct', '')
         
-        # Numerator: e.g., 'orders' for 'order_rate'
-        if f"{prefix}{base_metric}" in row:
-            data['numerator'] = row[f"{prefix}{base_metric}"]
+        # Enhanced numerator candidates for different metric patterns
+        numerator_candidates = []
+        
+        if 'system_level_push_opt_out_pct' in metric_name:
+            numerator_candidates = [f"{prefix}system_level_push_opt_out"]
+        elif 'system_level_push_opt_in_pct' in metric_name:
+            numerator_candidates = [f"{prefix}system_level_push_opt_in"]
+        elif metric_name in ['explore_rate', 'store_rate', 'cart_rate', 'checkout_rate']:
+            # Special pattern: explore_rate → explore_view, store_rate → store_view, etc.
+            view_metric = base_metric + '_view'  # explore + _view = explore_view
+            numerator_candidates = [f"{prefix}{view_metric}", f"{prefix}{base_metric}"]
+        elif 'completion' in metric_name:
+            # onboarding_completion → calculate from rate * denominator since count not available
+            # Don't look for numerator - we'll calculate it below
+            numerator_candidates = []
+        else:
+            # Standard patterns: try both singular and plural
+            numerator_candidates = [f"{prefix}{base_metric}s", f"{prefix}{base_metric}"]
+            
+        for candidate in numerator_candidates:
+            if candidate in row:
+                data['numerator'] = row[candidate]
+                break
         
         # Denominator: exposure, total_cx, etc.
-        denominator_candidates = [f"{prefix}exposure", f"{prefix}total_cx", f"{prefix}sample_size"]
+        denominator_candidates = [
+            f"{prefix}exposure_onboard", f"{prefix}exposure", f"{prefix}total_cx", 
+            f"{prefix}sample_size", f"{prefix}total_devices", f"{prefix}total_users"
+        ]
         for candidate in denominator_candidates:
             if candidate in row:
                 data['denominator'] = row[candidate]
                 break
+                
+        # If no denominator found, use the sample_size from the metric value itself
+        if 'denominator' not in data or data['denominator'] is None:
+            if f"{prefix}sample_size" in row and row[f"{prefix}sample_size"] is not None:
+                data['denominator'] = row[f"{prefix}sample_size"]
+                
+        # This logic was inside the rate block but needs to be outside
     
+    # Special handling for completion metrics - find denominator and calculate numerator
+    # This needs to be OUTSIDE the rate block since completion doesn't contain '_rate'  
+    if 'completion' in metric_name:
+        # For completion metrics, denominator is usually exposure/sample_size
+        if 'denominator' not in data or data['denominator'] is None:
+            for denom_candidate in [f"{prefix}exposure", f"{prefix}sample_size", f"{prefix}total_cx"]:
+                if denom_candidate in row and row[denom_candidate] is not None:
+                    data['denominator'] = row[denom_candidate]
+                    break
+        
+        # Calculate numerator from rate * denominator
+        if 'denominator' in data and data['denominator'] is not None:
+            rate_value = data.get('value')
+            if rate_value is not None and rate_value != 'nan':
+                try:
+                    data['numerator'] = int(float(rate_value) * float(data['denominator']))
+                except (ValueError, TypeError):
+                    pass
+
     # Sample size
     sample_size_candidates = [
         f"{prefix}sample_size", f"{prefix}exposure", f"{prefix}total_cx",
@@ -246,7 +345,23 @@ def extract_metric_data(row: Optional[dict], metric_name: str, arm_type: str) ->
             break
     
     # Standard deviation (for continuous metrics)
-    std_candidates = [f"{prefix}std_{metric_name}", f"{prefix}{metric_name}_std"]
+    # Map metric names to actual SQL column names for std
+    metric_name_mapping = {
+        'vp': 'variable_profit',
+        'vp_per_device': 'variable_profit',  # Both vp metrics use same std
+        'gov': 'gov',
+        'gov_per_device': 'gov'  # Both gov metrics use same std
+    }
+    
+    # Get the actual column name for std lookup
+    std_column_name = metric_name_mapping.get(metric_name, metric_name)
+    
+    std_candidates = [
+        f"{prefix}std_{std_column_name}", 
+        f"{prefix}{std_column_name}_std",
+        f"{prefix}std_{metric_name}", 
+        f"{prefix}{metric_name}_std"
+    ]
     for candidate in std_candidates:
         if candidate in row:
             data['std'] = row[candidate]

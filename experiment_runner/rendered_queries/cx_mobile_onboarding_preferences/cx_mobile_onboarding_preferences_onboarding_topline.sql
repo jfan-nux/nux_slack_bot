@@ -110,6 +110,9 @@ SELECT r1.tag
         , r1.mau_rate / nullif(r2.mau_rate,0) - 1 AS Lift_mau_rate
         
         -- Statistical variables for p-value calculations
+        -- Treatment group statistics (r1)
+        , r1.std_variable_profit AS std_variable_profit
+        , r1.std_gov AS std_gov
         -- Control group statistics (r2)
         , r2.std_variable_profit AS control_std_variable_profit
         , r2.std_gov AS control_std_gov
