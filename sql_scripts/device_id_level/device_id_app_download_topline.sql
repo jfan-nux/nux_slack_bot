@@ -447,7 +447,21 @@ SELECT r1.*
         , r1.MAU_rate / NULLIF(r2.MAU_rate,0) - 1 AS Lift_MAU_rate    
         
         -- Statistical variables for p-value calculations
-        -- Control group statistics (r2)
+        -- Control group statistics (r2) for rate variables
+        , r2.order_rate AS control_order_rate
+        , r2.new_cx_rate AS control_new_cx_rate
+        , r2.subtotal AS control_subtotal
+        , r2.avg_subtotal_per_exposure AS control_avg_subtotal_per_exposure
+        , r2.avg_subtotal_per_order AS control_avg_subtotal_per_order
+        , r2.variable_profit AS control_variable_profit
+        , r2.avg_vp_per_exposure AS control_avg_vp_per_exposure
+        , r2.avg_vp_per_order AS control_avg_vp_per_order
+        , r2.gov AS control_gov
+        , r2.avg_gov_per_exposure AS control_avg_gov_per_exposure
+        , r2.avg_gov_per_order AS control_avg_gov_per_order
+        , r2.overall_login_rate AS control_overall_login_rate
+        , r2.overall_signup_rate AS control_overall_signup_rate
+        , r2.MAU_rate AS control_MAU_rate
         , r2.std_subtotal AS control_std_subtotal
         , r2.std_variable_profit AS control_std_variable_profit
         , r2.std_gov AS control_std_gov

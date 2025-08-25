@@ -309,7 +309,7 @@ def extract_metric_data(row: Optional[dict], metric_name: str, arm_type: str) ->
     # Map metric names to actual SQL column names
     value_mapping = {
         'vp': 'variable_profit',
-        'vp_per_device': 'vp_per_device',
+        'vp_per_device': 'VP_per_device',  # Note: SQL uses uppercase VP_per_device
         'gov': 'gov',
         'gov_per_device': 'gov_per_device'
     }
