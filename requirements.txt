@@ -14,7 +14,7 @@ requests>=2.30.0
 slack-sdk>=3.25.0
 snowflake-connector-python>=3.5.0
 portkey-ai>=1.0.0
-dynamic-values-python>=0.0.12
+dynamic-values-python
 
 # Task scheduling
 apscheduler>=3.10.0
