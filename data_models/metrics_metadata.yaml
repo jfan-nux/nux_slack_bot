@@ -1,0 +1,722 @@
+# Metrics Metadata
+# Generated from sql_scripts/device_id_level/ SQL files
+
+templates:
+  app_download:
+    description: "Metrics related to mobile web to app conversion and download attribution"
+    primary_business_goal: "Increase app adoption and cross-platform usage"
+    typical_experiments: ["App store redirect tests", "Download incentive experiments", "Cross-platform attribution"]
+
+    download_only:
+      template_rank: 3
+      app_download_rate:
+        metric_rank: 1
+        metric_type: "conversion_rate"
+        desired_direction: "increase"
+        description: "Rate of app downloads from mobile web exposures to actual app installations"
+        calculation: "app_downloads / exposures"
+        denominator: "exposures"
+        numerator: "app_downloads"
+        business_impact: "Higher app download rates indicate better mobile web to app conversion"
+    
+    suma:
+      template_rank: 2
+      suma_rate:
+        metric_type: "conversion_rate"
+        desired_direction: "increase"
+        description: "Rate of SUMA (Single User Multiple Account) signups"
+        calculation: "suma_signups / exposures"
+        denominator: "exposures"
+        numerator: "suma_signups"
+        business_impact: "SUMA accounts typically have higher engagement and retention"
+        metric_rank: 1
+
+      # overall_signup_rate:
+      #   metric_type: "conversion_rate"
+      #   desired_direction: "increase"
+      #   description: "Overall signup rate including all authentication methods"
+      #   calculation: "overall_signups / exposures"
+      #   denominator: "exposures"
+      #   numerator: "overall_signups"
+      #   business_impact: "Core funnel metric for user acquisition"
+      #   metric_rank: 2
+
+    topline_app_only:
+      template_rank: 4
+      order_rate:
+        metric_type: "conversion_rate"
+        desired_direction: "increase"
+        description: "Rate of successful orders placed from app exposures"
+        calculation: "orders / exposures"
+        denominator: "exposures"
+        numerator: "orders"
+        business_impact: "Primary revenue-driving metric"
+        metric_rank: 1
+      new_cx_rate:
+        metric_type: "conversion_rate"
+        desired_direction: "increase"
+        description: "Rate of new customer acquisitions"
+        calculation: "new_customers / exposures"
+        denominator: "exposures"
+        numerator: "new_customers"
+        business_impact: "Key metric for customer base growth"
+        metric_rank: 2
+        
+      avg_subtotal_per_exposure:
+        metric_type: "financial"
+        desired_direction: "increase"
+        description: "Average subtotal revenue per exposed user"
+        calculation: "total_subtotal / exposures"
+        denominator: "exposures"
+        numerator: "total_subtotal"
+        business_impact: "Measures revenue efficiency per user"
+        metric_rank: 4
+        
+      avg_vp_per_exposure:
+        metric_type: "financial"
+        desired_direction: "increase"
+        description: "Average variable profit per exposed user"
+        calculation: "total_variable_profit / exposures"
+        denominator: "exposures"
+        numerator: "total_variable_profit"
+        business_impact: "Key profitability metric per user"
+        metric_rank: 5
+
+      avg_gov_per_exposure:
+        metric_type: "financial"
+        desired_direction: "increase"
+        description: "Average gross order value per exposed user"
+        calculation: "total_gov / exposures"
+        denominator: "exposures"
+        numerator: "total_gov"
+        business_impact: "Measures total order value efficiency"
+        metric_rank: 6
+        
+    topline:
+      template_rank: 1
+      order_rate:
+        metric_type: "conversion_rate"
+        desired_direction: "increase"
+        description: "Rate of successful orders placed from exposures"
+        calculation: "orders / exposures"
+        denominator: "exposures"
+        numerator: "orders"
+        business_impact: "Primary revenue-driving metric"
+        metric_rank: 1
+        
+      new_cx_rate:
+        metric_type: "conversion_rate"
+        desired_direction: "increase"
+        description: "Rate of new customer acquisitions"
+        calculation: "new_customers / exposures"
+        denominator: "exposures"
+        numerator: "new_customers"
+        business_impact: "Key metric for customer base growth"
+        metric_rank: 2
+        
+      avg_subtotal_per_exposure:
+        metric_type: "financial"
+        desired_direction: "increase"
+        description: "Average subtotal revenue per exposed user"
+        calculation: "total_subtotal / exposures"
+        denominator: "exposures"
+        numerator: "total_subtotal"
+        business_impact: "Measures revenue efficiency per user"
+        metric_rank: 3
+        
+      avg_vp_per_exposure:
+        metric_type: "financial"
+        desired_direction: "increase"
+        description: "Average variable profit per exposed user"
+        calculation: "total_variable_profit / exposures"
+        denominator: "exposures"
+        numerator: "total_variable_profit"
+        business_impact: "Key profitability metric per user"
+        metric_rank: 4
+        
+      avg_gov_per_exposure:
+        metric_type: "financial"
+        desired_direction: "increase"
+        description: "Average gross order value per exposed user"
+        calculation: "total_gov / exposures"
+        denominator: "exposures"
+        numerator: "total_gov"
+        business_impact: "Measures total order value efficiency"
+        metric_rank: 5
+        
+      overall_signup_rate:
+        metric_type: "conversion_rate"
+        desired_direction: "increase"
+        description: "Overall signup rate including all authentication methods"
+        calculation: "overall_signups / exposures"
+        denominator: "exposures"
+        numerator: "overall_signups"
+        business_impact: "Core funnel metric for user acquisition"
+        metric_rank: 7
+        
+      overall_login_rate:
+        metric_type: "conversion_rate"
+        desired_direction: "increase"
+        description: "Rate of successful logins across all methods"
+        calculation: "overall_logins / exposures"
+        denominator: "exposures"
+        numerator: "overall_logins"
+        business_impact: "Authentication success metric"
+        metric_rank: 6
+        
+      mau_rate:
+        metric_type: "engagement"
+        desired_direction: "increase"
+        description: "Monthly active users rate based on past 28 days activity"
+        calculation: "mau_users / exposures"
+        denominator: "exposures"
+        numerator: "mau_users"
+        business_impact: "Long-term engagement and retention metric"
+        metric_rank: 8
+
+  appclip:
+    description: "Metrics for iOS App Clip experience and conversion to full app"
+    primary_business_goal: "Lightweight app experience leading to full app adoption"
+    typical_experiments: ["App clip UI/UX tests", "Checkout flow optimization", "App clip to app conversion"]
+    
+    app_download:
+      template_rank: 4
+      app_install_rate:
+        metric_type: "conversion_rate"
+        desired_direction: "increase"
+        description: "Rate of full app installations from app clip usage"
+        calculation: "app_installs / app_clip_launches"
+        denominator: "app_clip_launches"
+        numerator: "app_installs"
+        business_impact: "Measures app clip to full app conversion"
+        
+    checkout_funnel:
+      template_rank: 3
+      checkout_rate:
+        metric_type: "conversion_rate"
+        desired_direction: "increase"
+        description: "Rate of reaching checkout page from total consumers"
+        calculation: "checkout_page_loads / total_consumers"
+        denominator: "total_consumers"
+        numerator: "checkout_page_loads"
+        business_impact: "App clip funnel progression metric"
+        metric_rank: 1
+        
+      checkout_success_rate:
+        metric_type: "conversion_rate"
+        desired_direction: "increase"
+        description: "Rate of successful checkouts from checkout page views"
+        calculation: "checkout_successes / checkout_page_loads"
+        denominator: "checkout_page_loads"
+        numerator: "checkout_successes"
+        business_impact: "Checkout completion efficiency"
+        metric_rank: 2
+        
+      checkout_page_system_checkout_error_rate:
+        metric_type: "error_rate"
+        desired_direction: "decrease"
+        description: "Rate of system checkout errors from checkout page"
+        calculation: "checkout_errors / checkout_page_loads"
+        denominator: "checkout_page_loads"
+        numerator: "checkout_errors"
+        business_impact: "Technical performance indicator"
+        metric_rank: 3
+        
+      payments_add_card_rate:
+        metric_type: "engagement"
+        desired_direction: "increase"
+        description: "Rate of payment card additions during checkout"
+        calculation: "payment_card_additions / checkout_page_loads"
+        denominator: "checkout_page_loads"
+        numerator: "payment_card_additions"
+        business_impact: "Payment method setup engagement"
+        metric_rank: 4
+        
+      checkout_change_payment_cell_tap_rate:
+        metric_type: "engagement"
+        desired_direction: "increase"
+        description: "Rate of payment method change interactions during checkout"
+        calculation: "checkout_change_payment_taps / checkout_page_loads"
+        denominator: "checkout_page_loads"
+        numerator: "checkout_change_payment_taps"
+        business_impact: "Payment method flexibility and user control"
+        metric_rank: 5
+        
+      checkout_place_order_tap_rate:
+        metric_type: "conversion_rate"
+        desired_direction: "increase"
+        description: "Rate of place order button interactions during checkout"
+        calculation: "checkout_place_order_taps / checkout_page_loads"
+        denominator: "checkout_page_loads"
+        numerator: "checkout_place_order_taps"
+        business_impact: "Final checkout step engagement before order completion"
+        metric_rank: 6
+        
+      payments_add_card_cell_tap_rate:
+        metric_type: "engagement"
+        desired_direction: "increase"
+        description: "Rate of add card cell interactions during checkout"
+        calculation: "payments_add_card_cell_taps / checkout_page_loads"
+        denominator: "checkout_page_loads"
+        numerator: "payments_add_card_cell_taps"
+        business_impact: "Payment setup process engagement"
+        metric_rank: 7
+        
+      payments_delete_card_rate:
+        metric_type: "engagement"
+        desired_direction: "decrease"
+        description: "Rate of payment card deletion during checkout"
+        calculation: "payments_delete_card_actions / checkout_page_loads"
+        denominator: "checkout_page_loads"
+        numerator: "payments_delete_card_actions"
+        business_impact: "Payment method management and potential friction indicator"
+        metric_rank: 8
+        
+    order_platform_split:
+      app_clip_order_rate:
+        metric_type: "conversion_rate"
+        desired_direction: "increase"
+        description: "Order rate specifically from app clip platform"
+        calculation: "app_clip_orders / total_consumers"
+        denominator: "total_consumers"
+        numerator: "app_clip_orders"
+        business_impact: "App clip platform conversion effectiveness"
+        
+      app_order_rate:
+        metric_type: "conversion_rate"
+        desired_direction: "increase"
+        description: "Order rate from full app usage"
+        calculation: "app_orders / total_consumers"
+        denominator: "total_consumers"
+        numerator: "app_orders"
+        business_impact: "Full app conversion effectiveness"
+        
+    overall_funnel:
+      template_rank: 2
+      explore_rate:
+        metric_type: "engagement"
+        desired_direction: "increase"
+        description: "Rate of exploring app clip home content"
+        calculation: "explore_page_views / total_consumers"
+        denominator: "total_consumers"
+        numerator: "explore_page_views"
+        business_impact: "Initial engagement with app clip"
+        metric_rank: 1
+        
+      store_rate:
+        metric_type: "conversion_rate"
+        desired_direction: "increase"
+        description: "Rate of store page visits from total consumers"
+        calculation: "store_page_views / total_consumers"
+        denominator: "total_consumers"
+        numerator: "store_page_views"
+        business_impact: "Store discovery engagement"
+        metric_rank: 2
+        
+      item_rate:
+        metric_type: "conversion_rate"
+        desired_direction: "increase"
+        description: "Rate of item interactions from store page visits"
+        calculation: "item_interactions / store_page_views"
+        denominator: "store_page_views"
+        numerator: "item_interactions"
+        business_impact: "Product engagement metric"
+        metric_rank: 3
+        
+      cart_rate:
+        metric_type: "conversion_rate"
+        desired_direction: "increase"
+        description: "Rate of cart page visits from total consumers"
+        calculation: "cart_page_views / total_consumers"
+        denominator: "total_consumers"
+        numerator: "cart_page_views"
+        business_impact: "Cart progression metric"
+        metric_rank: 4
+        
+      checkout_rate:
+        metric_type: "conversion_rate"
+        desired_direction: "increase"
+        description: "Rate of checkout page visits from cart page visits"
+        calculation: "checkout_page_views / cart_page_views"
+        denominator: "cart_page_views"
+        numerator: "checkout_page_views"
+        business_impact: "Cart to checkout conversion in app clip"
+        metric_rank: 5
+        
+      checkout_success_rate:
+        metric_type: "conversion_rate"
+        desired_direction: "increase"
+        description: "Rate of successful checkouts from checkout page views"
+        calculation: "checkout_successes / checkout_page_views"
+        denominator: "checkout_page_views"
+        numerator: "checkout_successes"
+        business_impact: "Checkout completion efficiency in app clip"
+        metric_rank: 6
+        
+      checkout_page_system_checkout_error_rate:
+        metric_type: "error_rate"
+        desired_direction: "decrease"
+        description: "Rate of system checkout errors from checkout page views"
+        calculation: "checkout_errors / checkout_page_views"
+        denominator: "checkout_page_views"
+        numerator: "checkout_errors"
+        business_impact: "Technical checkout performance indicator"
+        metric_rank: 7
+        
+    topline:
+      template_rank: 1
+      total_cx:
+        metric_type: "engagement"
+        desired_direction: "increase"
+        description: "Total number of consumers in app clip experiment"
+        calculation: "count(distinct consumer_id)"
+        denominator: null
+        numerator: "total_consumers"
+        business_impact: "Sample size and reach of app clip experiment"
+        metric_rank: 1
+        
+      order_rate:
+        metric_type: "engagement"
+        desired_direction: "increase"
+        description: "Average number of orders per consumer"
+        calculation: "total_orders / total_consumers"
+        denominator: "total_consumers"
+        numerator: "total_orders"
+        business_impact: "Primary conversion metric for app clip usage"
+        metric_rank: 2
+        
+      new_cx_rate:
+        metric_type: "engagement"
+        desired_direction: "increase"
+        description: "Average number of new customer orders per consumer"
+        calculation: "new_customer_orders / total_consumers"
+        denominator: "total_consumers"
+        numerator: "new_customer_orders"
+        business_impact: "New customer acquisition through app clip"
+        metric_rank: 3
+        
+      order_frequency:
+        metric_type: "engagement"
+        desired_direction: "increase"
+        description: "Average order frequency per ordering consumer"
+        calculation: "total_orders / ordering_consumers"
+        denominator: "ordering_consumers"
+        numerator: "total_orders"
+        business_impact: "Customer ordering frequency and loyalty in app clip"
+        metric_rank: 4
+        
+      mau_rate:
+        metric_type: "engagement"
+        desired_direction: "increase"
+        description: "Monthly active users rate based on past 28 days orders"
+        calculation: "mau_users / total_consumers"
+        denominator: "total_consumers"
+        numerator: "mau_users"
+        business_impact: "Long-term engagement and retention from app clip"
+        metric_rank: 5
+
+  onboarding:
+    description: "New user onboarding flow and permission optimization metrics"
+    primary_business_goal: "Maximize user activation and permission acceptance"
+    typical_experiments: ["Permission flow optimization", "Onboarding step reduction", "Messaging tests"]
+    
+    dashpass:
+      template_rank: 3
+      dashpass_trial_signup_rate:
+        metric_type: "conversion_rate"
+        desired_direction: "increase"
+        description: "Rate of DashPass trial signups from onboarding exposures"
+        calculation: "dashpass_trial_signups / exposures"
+        denominator: "exposures"
+        numerator: "dashpass_trial_signups"
+        business_impact: "Subscription service adoption metric"
+        metric_rank: 1
+        
+    overall_funnel:
+      template_rank: 1
+      explore_rate:
+        metric_type: "engagement"
+        desired_direction: "increase"
+        description: "Rate of exploring content from onboarding exposures"
+        calculation: "explore_views / exposures"
+        denominator: "exposures"
+        numerator: "explore_views"
+        business_impact: "Initial engagement with onboarding experience"
+        metric_rank: 1
+        
+      store_rate:
+        metric_type: "conversion_rate"
+        desired_direction: "increase"
+        description: "Rate of store page visits from explore views"
+        calculation: "store_views / explore_views"
+        denominator: "explore_views"
+        numerator: "store_views"
+        business_impact: "Progression from exploration to store discovery"
+        metric_rank: 2
+        
+      cart_rate:
+        metric_type: "conversion_rate"
+        desired_direction: "increase"
+        description: "Rate of cart page visits from store views"
+        calculation: "cart_views / store_views"
+        denominator: "store_views"
+        numerator: "cart_views"
+        business_impact: "Cart engagement from store browsing"
+        metric_rank: 3
+        
+      checkout_rate:
+        metric_type: "conversion_rate"
+        desired_direction: "increase"
+        description: "Rate of checkout attempts from cart views"
+        calculation: "checkout_views / cart_views"
+        denominator: "cart_views"
+        numerator: "checkout_views"
+        business_impact: "Conversion to checkout from cart"
+        metric_rank: 4
+
+    onboarding_funnel:
+      template_rank: 5
+      start_page_view_rate:
+        metric_type: "engagement"
+        desired_direction: "increase"
+        description: "Rate of onboarding start page views"
+        calculation: "start_page_views / exposures"
+        denominator: "exposures"
+        numerator: "start_page_views"
+        business_impact: "Onboarding entry point engagement"
+        metric_rank: 1
+        
+      start_page_click_rate:
+        metric_type: "conversion_rate"
+        desired_direction: "increase"
+        description: "Rate of clicks on onboarding start page"
+        calculation: "start_page_clicks / start_page_views"
+        denominator: "start_page_views"
+        numerator: "start_page_clicks"
+        business_impact: "Onboarding engagement progression"
+        metric_rank: 2
+
+      notification_view_rate:
+        metric_type: "conversion_rate"
+        desired_direction: "increase"
+        description: "Rate of notification permission page views"
+        calculation: "notification_views / start_page_clicks"
+        denominator: "start_page_clicks"
+        numerator: "notification_views"
+        business_impact: "Permission request flow progression"
+        metric_rank: 3
+
+      notification_click_rate:
+        metric_type: "conversion_rate"
+        desired_direction: "increase"
+        description: "Rate of notification permission interactions"
+        calculation: "notification_clicks / notification_views"
+        denominator: "notification_views"
+        numerator: "notification_clicks"
+        business_impact: "Permission acceptance likelihood"
+        metric_rank: 4
+
+      marketing_sms_view_rate:
+        metric_type: "conversion_rate"
+        desired_direction: "increase"
+        description: "Rate of marketing SMS permission page views"
+        calculation: "marketing_sms_views / notification_clicks"
+        denominator: "notification_clicks"
+        numerator: "marketing_sms_views"
+        business_impact: "SMS marketing opt-in flow progression"
+        metric_rank: 5
+
+      marketing_sms_click_rate:
+        metric_type: "conversion_rate"
+        desired_direction: "increase"
+        description: "Rate of marketing SMS permission interactions"
+        calculation: "marketing_sms_clicks / marketing_sms_views"
+        denominator: "marketing_sms_views"
+        numerator: "marketing_sms_clicks"
+        business_impact: "SMS marketing opt-in acceptance"
+        metric_rank: 6
+
+      att_view_rate:
+        metric_type: "conversion_rate"
+        desired_direction: "increase"
+        description: "Rate of App Tracking Transparency page views"
+        calculation: "att_views / marketing_sms_clicks"
+        denominator: "marketing_sms_clicks"
+        numerator: "att_views"
+        business_impact: "iOS 14.5+ tracking permission flow"
+        metric_rank: 7
+
+      att_click_rate:
+        metric_type: "conversion_rate"
+        desired_direction: "increase"
+        description: "Rate of App Tracking Transparency interactions"
+        calculation: "att_clicks / att_views"
+        denominator: "att_views"
+        numerator: "att_clicks"
+        business_impact: "Tracking permission acceptance for attribution"
+        metric_rank: 8
+
+      end_page_view_rate:
+        metric_type: "conversion_rate"
+        desired_direction: "increase"
+        description: "Rate of onboarding completion page views"
+        calculation: "end_page_views / att_clicks"
+        denominator: "att_clicks"
+        numerator: "end_page_views"
+        business_impact: "Onboarding flow completion"
+        metric_rank: 9
+
+      end_page_click_rate:
+        metric_type: "conversion_rate"
+        desired_direction: "increase"
+        description: "Rate of onboarding end page interactions"
+        calculation: "end_page_clicks / end_page_views"
+        denominator: "end_page_views"
+        numerator: "end_page_clicks"
+        business_impact: "Final onboarding engagement"
+        metric_rank: 10
+
+      onboarding_completion:
+        metric_type: "conversion_rate"
+        desired_direction: "increase"
+        description: "Overall onboarding completion rate"
+        calculation: "att_clicks / start_page_views"
+        denominator: "start_page_views"
+        numerator: "att_clicks"
+        business_impact: "End-to-end onboarding success"
+        metric_rank: 11
+
+    system_level_opt_in:
+      template_rank: 4
+      system_level_push_opt_in_pct:
+        metric_type: "conversion_rate"
+        desired_direction: "increase"
+        description: "Percentage of users who opt into system-level push notifications"
+        calculation: "system_push_opt_ins / total_consumers"
+        denominator: "total_consumers"
+        numerator: "system_push_opt_ins"
+        business_impact: "Critical for re-engagement and retention campaigns"
+        metric_rank: 1
+        
+      system_level_push_opt_out_pct:
+        metric_type: "error_rate"
+        desired_direction: "decrease"
+        description: "Percentage of users who opt out of system-level push notifications"
+        calculation: "system_push_opt_outs / total_consumers"
+        denominator: "total_consumers"
+        numerator: "system_push_opt_outs"
+        business_impact: "Indicates potential friction in permission flow"
+        metric_rank: 2
+        
+    topline:
+      template_rank: 2
+      order_rate:
+        metric_type: "conversion_rate"
+        desired_direction: "increase"
+        description: "Rate of successful orders placed from onboarding exposures"
+        calculation: "orders / exposures"
+        denominator: "exposures"
+        numerator: "orders"
+        business_impact: "Primary revenue-driving metric for onboarding"
+        metric_rank: 1
+        
+      new_cx_rate:
+        metric_type: "conversion_rate"
+        desired_direction: "increase"
+        description: "Rate of new customer acquisitions from onboarding"
+        calculation: "new_customers / exposures"
+        denominator: "exposures"
+        numerator: "new_customers"
+        business_impact: "New customer acquisition from onboarding experience"
+        metric_rank: 2
+        
+      vp_per_device:
+        metric_type: "financial"
+        desired_direction: "increase"
+        description: "Variable profit per exposed device"
+        calculation: "total_variable_profit / exposures"
+        denominator: "exposures"
+        numerator: "total_variable_profit"
+        business_impact: "Profitability impact of onboarding"
+        metric_rank: 3
+        
+      gov_per_device:
+        metric_type: "financial"
+        desired_direction: "increase"
+        description: "Gross order value per exposed device"
+        calculation: "total_gov / exposures"
+        denominator: "exposures"
+        numerator: "total_gov"
+        business_impact: "Revenue impact of onboarding improvements"
+        metric_rank: 4
+        
+      mau_rate:
+        metric_type: "engagement"
+        desired_direction: "increase"
+        description: "Monthly active users rate based on past 28 days activity"
+        calculation: "mau_users / exposures"
+        denominator: "exposures"
+        numerator: "mau_users"
+        business_impact: "Long-term engagement and retention from onboarding"
+        metric_rank: 5
+        
+      total_vp:
+        metric_type: "financial"
+        desired_direction: "increase"
+        description: "Total variable profit generated from onboarding exposures"
+        calculation: "sum(variable_profit)"
+        denominator: null
+        numerator: "total_variable_profit"
+        business_impact: "Total profitability impact of onboarding experiment"
+        metric_rank: 6
+        
+      total_gov:
+        metric_type: "financial"
+        desired_direction: "increase"
+        description: "Total gross order value generated from onboarding exposures"
+        calculation: "sum(gov)"
+        denominator: null
+        numerator: "total_gov"
+        business_impact: "Total revenue impact of onboarding experiment"
+        metric_rank: 7
+
+# Metric Type Definitions
+metric_types:
+  conversion_rate:
+    description: "Percentage of users who complete a desired action"
+    calculation_type: "ratio"
+    statistical_test: "two_proportion_z_test"
+    
+  engagement:
+    description: "User interaction and activity metrics"
+    calculation_type: "ratio_or_average"
+    statistical_test: "varies_by_metric"
+    
+  financial:
+    description: "Revenue, profit, and monetary value metrics"
+    calculation_type: "average_or_sum"
+    statistical_test: "welch_t_test"
+    
+  error_rate:
+    description: "Technical or user error frequency metrics"
+    calculation_type: "ratio"
+    statistical_test: "two_proportion_z_test"
+
+# Analysis Guidelines
+analysis_guidelines:
+  statistical_significance:
+    minimum_sample_size: 1000
+    significance_level: 0.05
+    power: 0.8
+    
+  business_significance:
+    minimum_effect_size:
+      conversion_rate: 0.02  # 2 percentage points
+      financial: 0.05        # 5% relative change
+      engagement: 0.10       # 10% relative change
+      error_rate: 0.01       # 1 percentage point decrease
+      
+  experiment_duration:
+    minimum_days: 7
+    recommended_days: 14
+    maximum_days: 28

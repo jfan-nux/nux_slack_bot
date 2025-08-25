@@ -8,7 +8,8 @@ from .experiment_config import get_templates_for_experiment
 
 def render_templates_for_experiment(config: dict) -> dict:
     """
-    Render all SQL templates for an experiment with its configuration
+    Render all SQL templates for an experiment with its configuration.
+    Skip rendering files that already exist to preserve manual overrides.
     
     Args:
         config: Experiment configuration dictionary
@@ -26,19 +27,34 @@ def render_templates_for_experiment(config: dict) -> dict:
     os.makedirs(rendered_dir, exist_ok=True)
     
     rendered_queries = {}
+    skipped_count = 0
+    rendered_count = 0
     
     for template_info in templates:
-        # Render the template
-        rendered_sql = render_template_file(template_info['path'], config)
-        
-        # Save rendered query
+        # Determine output path
         rendered_filename = f"{experiment_name}_{template_info['name']}.sql"
         rendered_path = os.path.join(rendered_dir, rendered_filename)
         
-        with open(rendered_path, 'w') as f:
-            f.write(rendered_sql)
+        # Check if file already exists
+        if os.path.exists(rendered_path):
+            print(f"      ⏭️  Skipping {template_info['name']} (file exists - preserving manual override)")
+            skipped_count += 1
+        else:
+            # Render the template
+            rendered_sql = render_template_file(template_info['path'], config)
+            
+            # Save rendered query
+            with open(rendered_path, 'w') as f:
+                f.write(rendered_sql)
+            
+            print(f"      ✨ Rendered {template_info['name']}")
+            rendered_count += 1
         
+        # Add to results regardless of whether it was rendered or skipped
         rendered_queries[template_info['name']] = rendered_path
+    
+    if skipped_count > 0 or rendered_count > 0:
+        print(f"      📊 Summary: {rendered_count} rendered, {skipped_count} skipped (existing files)")
         
     return rendered_queries
 

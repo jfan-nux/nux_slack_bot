@@ -23,7 +23,7 @@ def store_metrics(metrics: List[ExperimentMetric]):
     insert_query = """
     INSERT INTO proddb.fionafan.experiment_metrics_results (
         experiment_name, start_date, end_date, version,
-        granularity, template_name, metric_name, treatment_arm, metric_type, dimension,
+        granularity, template_name, metric_name, treatment_arm, metric_type, dimension, template_rank, metric_rank, desired_direction,
         treatment_numerator, treatment_denominator, treatment_value, treatment_sample_size, treatment_std,
         control_numerator, control_denominator, control_value, control_sample_size, control_std,
         lift, absolute_difference, p_value, confidence_interval_lower, confidence_interval_upper,
@@ -63,6 +63,9 @@ def store_metrics(metrics: List[ExperimentMetric]):
             {safe_value(metric.treatment_arm)},
             {safe_value(metric.metric_type)},
             {safe_value(metric.dimension)},
+            {safe_value(metric.template_rank)},
+            {safe_value(metric.metric_rank)},
+            {safe_value(metric.desired_direction)},
             {safe_value(metric.treatment_numerator)},
             {safe_value(metric.treatment_denominator)},
             {safe_value(metric.treatment_value)},
@@ -139,6 +142,9 @@ def create_metrics_table():
         treatment_arm VARCHAR(50), -- e.g., 'treatment', 'variant_1' (NO control rows)
         metric_type VARCHAR(20), -- 'rate' or 'continuous'
         dimension VARCHAR(50), -- e.g., 'app', 'app_clip', NULL for most metrics
+        template_rank INT, -- From metrics_metadata.yaml
+        metric_rank INT, -- From metrics_metadata.yaml
+        desired_direction VARCHAR(20), -- From metrics_metadata.yaml
         
         -- Raw Treatment Values
         treatment_numerator FLOAT,
@@ -177,7 +183,10 @@ def create_metrics_table():
     try:
         with SnowflakeHook() as hook:
             hook.query_without_result(create_table_sql)
-        print("✓ Created/verified experiment_metrics_results table")
+            # Grant SELECT permissions to PUBLIC for read-only access
+            grant_sql = "GRANT SELECT ON TABLE proddb.fionafan.experiment_metrics_results TO ROLE PUBLIC;"
+            hook.query_without_result(grant_sql)
+        print("✓ Created/verified experiment_metrics_results table with PUBLIC read access")
     except Exception as e:
         print(f"✗ Error creating table: {e}")
         raise

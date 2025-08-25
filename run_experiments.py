@@ -216,7 +216,7 @@ def run_all_experiments(max_workers: int = 4):
             config = load_experiment_config(exp_key)
             experiment_configs[exp_key] = config
             rendered_queries = render_templates_for_experiment(config)
-            print(f"      ✅ Rendered {len(rendered_queries)} templates")
+            print(f"      ✅ Prepared {len(rendered_queries)} templates for execution")
             
             # Prepare query info for parallel execution
             for template_name, query_path in rendered_queries.items():

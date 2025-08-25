@@ -4,6 +4,8 @@ Results Parser - Parse SQL query results into experiment metrics
 
 from dataclasses import dataclass
 from typing import List, Optional, Any
+import yaml
+import os
 
 @dataclass
 class ExperimentMetric:
@@ -22,6 +24,9 @@ class ExperimentMetric:
     treatment_arm: str  # 'treatment', 'variant_1', etc. (no control)
     metric_type: str  # 'rate' or 'continuous'
     dimension: Optional[str] = None  # e.g., 'app', 'app_clip', None
+    template_rank: Optional[int] = None  # From metrics_metadata.yaml
+    metric_rank: Optional[int] = None  # From metrics_metadata.yaml
+    desired_direction: Optional[str] = None  # From metrics_metadata.yaml
     
     # Treatment values
     treatment_numerator: Optional[float] = None
@@ -50,6 +55,72 @@ class ExperimentMetric:
     query_execution_timestamp: Optional[str] = None
     query_runtime_seconds: Optional[float] = None
 
+def _load_metrics_metadata():
+    """Load metrics metadata from YAML file"""
+    try:
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        project_root = os.path.dirname(current_dir)
+        metadata_path = os.path.join(project_root, 'data_models', 'metrics_metadata.yaml')
+        
+        with open(metadata_path, 'r') as f:
+            return yaml.safe_load(f)
+    except Exception as e:
+        print(f"Warning: Could not load metrics metadata: {e}")
+        return {}
+
+def _get_metric_metadata(template_name: str, metric_name: str, metadata: dict) -> tuple[Optional[int], Optional[int], Optional[str]]:
+    """Get template_rank, metric_rank, and desired_direction for a specific metric"""
+    try:
+        templates = metadata.get('templates', {})
+        
+        # Handle different template naming patterns
+        # e.g., 'onboarding_topline' -> template='onboarding', subcategory='topline'
+        # e.g., 'app_download_topline' -> template='app_download', subcategory='topline'
+        
+        main_template = None
+        subcategory = None
+        
+        # Try different parsing strategies
+        if '_' in template_name:
+            # Strategy 1: Check if full template name exists (e.g., 'app_download')
+            parts = template_name.split('_')
+            for i in range(len(parts) - 1, 0, -1):  # Try from longest to shortest
+                potential_template = '_'.join(parts[:i])
+                potential_subcategory = '_'.join(parts[i:])
+                
+                if potential_template in templates:
+                    main_template = potential_template
+                    subcategory = potential_subcategory
+                    break
+            
+            # Strategy 2: Fall back to simple split if no match found
+            if main_template is None:
+                main_template, subcategory = template_name.split('_', 1)
+        else:
+            main_template = template_name
+            subcategory = None
+        
+        if main_template not in templates:
+            return None, None, None
+        
+        template_data = templates[main_template]
+        
+        if subcategory and subcategory in template_data:
+            subcategory_data = template_data[subcategory]
+            template_rank = subcategory_data.get('template_rank')
+            
+            if metric_name in subcategory_data:
+                metric_data = subcategory_data[metric_name]
+                metric_rank = metric_data.get('metric_rank')
+                desired_direction = metric_data.get('desired_direction')
+                return template_rank, metric_rank, desired_direction
+        
+        return None, None, None
+        
+    except Exception as e:
+        print(f"Warning: Error getting metric metadata for {template_name}/{metric_name}: {e}")
+        return None, None, None
+
 def parse_results(results: List[dict], template_name: str, config: dict) -> List[ExperimentMetric]:
     """
     Parse SQL query results into ExperimentMetric objects
@@ -65,6 +136,9 @@ def parse_results(results: List[dict], template_name: str, config: dict) -> List
     
     if not results:
         return []
+    
+    # Load metrics metadata for ranking information
+    metadata = _load_metrics_metadata()
     
     metrics = []
     
@@ -113,6 +187,9 @@ def parse_results(results: List[dict], template_name: str, config: dict) -> List
             # Determine metric type
             metric_type = determine_metric_type(metric_name, row, control_row)
             
+            # Get template and metric metadata from YAML
+            template_rank, metric_rank, desired_direction = _get_metric_metadata(template_name, metric_name, metadata)
+            
             # Extract treatment values
             treatment_data = extract_metric_data(row, metric_name, 'treatment')
             
@@ -134,6 +211,9 @@ def parse_results(results: List[dict], template_name: str, config: dict) -> List
                 treatment_arm=treatment_arm_value,  # treatment, variant_1, etc.
                 metric_type=metric_type,
                 dimension=dimension_value,
+                template_rank=template_rank,
+                metric_rank=metric_rank,
+                desired_direction=desired_direction,
                 
                 # Treatment data
                 treatment_numerator=treatment_data.get('numerator'),

@@ -1,5 +1,6 @@
 # Manual list of experiments to process
 # Updated with correct experiment_name values for Snowflake queries
+# if segments is missing then it includes all segments
 
 experiments:
   should_pin_leaderboard_carousel:
