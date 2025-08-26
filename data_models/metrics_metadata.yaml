@@ -640,6 +640,16 @@ templates:
         business_impact: "Profitability impact of onboarding"
         metric_rank: 3
         
+      vp:
+        metric_type: "financial"
+        desired_direction: "increase"
+        description: "Variable profit from onboarding exposures"
+        calculation: "variable_profit"
+        denominator: null
+        numerator: "variable_profit"
+        business_impact: "Direct profitability metric for onboarding"
+        metric_rank: 4
+        
       gov_per_device:
         metric_type: "financial"
         desired_direction: "increase"
@@ -648,7 +658,17 @@ templates:
         denominator: "exposures"
         numerator: "total_gov"
         business_impact: "Revenue impact of onboarding improvements"
-        metric_rank: 4
+        metric_rank: 5
+        
+      gov:
+        metric_type: "financial"
+        desired_direction: "increase"
+        description: "Gross order value from onboarding exposures"
+        calculation: "gross_order_value"
+        denominator: null
+        numerator: "gross_order_value"
+        business_impact: "Direct revenue metric for onboarding"
+        metric_rank: 6
         
       mau_rate:
         metric_type: "engagement"
@@ -658,7 +678,7 @@ templates:
         denominator: "exposures"
         numerator: "mau_users"
         business_impact: "Long-term engagement and retention from onboarding"
-        metric_rank: 5
+        metric_rank: 7
         
       total_vp:
         metric_type: "financial"
@@ -668,7 +688,7 @@ templates:
         denominator: null
         numerator: "total_variable_profit"
         business_impact: "Total profitability impact of onboarding experiment"
-        metric_rank: 6
+        metric_rank: 8
         
       total_gov:
         metric_type: "financial"
@@ -678,7 +698,7 @@ templates:
         denominator: null
         numerator: "total_gov"
         business_impact: "Total revenue impact of onboarding experiment"
-        metric_rank: 7
+        metric_rank: 9
 
 # Metric Type Definitions
 metric_types:

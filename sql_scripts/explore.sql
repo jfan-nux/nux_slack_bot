@@ -2,12 +2,15 @@
 select * from proddb.fionafan.experiment_metrics_results 
 where insert_timestamp = (select max(insert_timestamp) from proddb.fionafan.experiment_metrics_results) ;
 -- and statsig_string = 'insufficient_data';
-
-select 
+select * from proddb.fionafan.combined_experiment_metrics
+where insert_timestamp = (select max(insert_timestamp) from proddb.fionafan.experiment_metrics_results) ;
+;
+select experiment_name,
 template_name, metric_name, treatment_value, control_value, lift, p_value, statsig_string, desired_direction,
 from proddb.fionafan.experiment_metrics_results 
 where insert_timestamp = (select max(insert_timestamp) from proddb.fionafan.experiment_metrics_results) 
 and experiment_name = 'should_pin_leaderboard_carousel'
+-- and treatment_value = control_value
 -- and template_name = 'app_download'
 order by experiment_name, template_rank, metric_rank
 -- and template_rank is null or metric_rank is null
