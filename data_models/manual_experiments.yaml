@@ -7,7 +7,7 @@ experiments:
     project_name: "Leaderboards uprank"
     experiment_name: "should_pin_leaderboard_carousel"
     description: "Uprank to feed"
-    start_date: "2025-08-21"
+    start_date: "2025-08-26"
     end_date: "2025-09-30"
     bucket_key: "consumer_id"
     template: "onboarding"
