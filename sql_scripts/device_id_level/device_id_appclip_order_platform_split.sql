@@ -4,16 +4,21 @@ Jinja2 Template Variables:
 - start_date: {{ start_date }}
 - end_date: {{ end_date }}
 - version: {{ version }}
+- segments: {{ segments }}
 #}
 with exposure as (
 select tag
+, LOWER(segment) AS segments
 , custom_attributes:consumer_id::varchar as consumer_id
 , min(exposure_time::date) as day
 FROM PRODDB.PUBLIC.FACT_DEDUP_EXPERIMENT_EXPOSURE 
 where experiment_name = '{{ experiment_name }}'
 and exposure_time between '{{ start_date }}' and '{{ end_date }}'
 and bucket_key_type = 'device_id'
-group by 1,2
+{%- if segments %}
+AND segment IN ({% for segment in segments %}'{{ segment }}'{% if not loop.last %}, {% endif %}{% endfor %})
+{%- endif %}
+group by 1,2,3
 ) 
  
 , signin as (
@@ -100,6 +105,7 @@ from app_orders
 )
 , checkout_rollup AS (
 SELECT e.tag
+, e.segments
 , e.consumer_id
 , o.platform
 , COUNT(DISTINCT o.delivery_ID ) orders
@@ -109,17 +115,18 @@ FROM full_consumer_id_list_w_app_downloads e
 JOIN all_orders o
 on (e.consumer_id = o.consumer_id
 or e.dd_device_ID_filtered = o.dd_device_ID_filtered)
-GROUP BY 1,2,3
+GROUP BY 1,2,3,4
 )
 , checkout as (
 select tag 
+, segments
 , platform
 , count(distinct consumer_id) as total_cx 
 , sum(orders) as total_orders
 , avg(orders) as avg_orders_per_cx
 , sum(orders) / count(distinct consumer_id) as order_rate
 from checkout_rollup 
-group by 1,2
+group by 1,2,3
 )
 
 , res AS (
@@ -149,5 +156,6 @@ FROM res r1
 LEFT JOIN res r2
     ON r1.tag != r2.tag
     AND r1.platform = r2.platform
+    AND r1.segments = r2.segments
     AND r2.tag = 'control'
-ORDER BY 1, 2 desc
+ORDER BY 1, 2, 3 desc

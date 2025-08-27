@@ -24,6 +24,7 @@ class ExperimentMetric:
     treatment_arm: str  # 'treatment', 'variant_1', etc. (no control)
     metric_type: str  # 'rate' or 'continuous'
     dimension: Optional[str] = None  # e.g., 'app', 'app_clip', None
+    segments: Optional[str] = None  # e.g., 'ios', 'android'
     template_rank: Optional[int] = None  # From metrics_metadata.yaml
     metric_rank: Optional[int] = None  # From metrics_metadata.yaml
     desired_direction: Optional[str] = None  # From metrics_metadata.yaml
@@ -169,6 +170,9 @@ def parse_results(results: List[dict], template_name: str, config: dict) -> List
         # Get dimension value if applicable
         dimension_value = row.get(dimension_column) if has_dimension else None
         
+        # Get segments value from SQL results
+        segments_value = row.get('segments')
+        
         # Find matching control row for this dimension
         control_row = find_control_row(results, dimension_value, has_dimension, dimension_column)
         
@@ -211,6 +215,7 @@ def parse_results(results: List[dict], template_name: str, config: dict) -> List
                 treatment_arm=treatment_arm_value,  # treatment, variant_1, etc.
                 metric_type=metric_type,
                 dimension=dimension_value,
+                segments=segments_value,
                 template_rank=template_rank,
                 metric_rank=metric_rank,
                 desired_direction=desired_direction,

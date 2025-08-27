@@ -5,6 +5,7 @@ WITH experiment AS (
     SELECT replace(lower(CASE WHEN bucket_key like 'dx_%' then bucket_key
                     else 'dx_'||bucket_key end), '-') AS dd_device_ID_filtered,
         bucket_key,
+        LOWER(segment) AS segments,
         max(a.result) AS bucket,
         min(a.exposure_time)::date AS first_exposure_date_utc,
         min(convert_timezone('UTC','America/Los_Angeles', a.exposure_time)) AS first_exposure_time,
@@ -15,7 +16,8 @@ WITH experiment AS (
     AND a.experiment_name = 'cx_mobile_onboarding_preferences'
     AND convert_timezone('UTC', 'America/Los_Angeles', a.exposure_time)::date >= '2025-08-18'
     AND experiment_version = 1
-    GROUP BY 1,2
+    AND segment IN ('iOS', 'Android')
+    GROUP BY 1,2,3
     HAVING count(distinct a.result) = 1
 )
 
@@ -56,6 +58,7 @@ WITH experiment AS (
   SELECT a.dd_device_ID_filtered , 
     a.bucket_key,
     a.bucket,
+    a.segments,
     b.event_ts,
     coalesce(b.system_push_opt_out, 0) AS system_level_push_opt_out,
     coalesce(b.system_push_opt_in, 0) AS system_level_push_opt_in,
@@ -66,22 +69,24 @@ WITH experiment AS (
 
 , opt_in_res AS (
 select BUCKET 
+, segments
 , count(distinct dd_device_ID_filtered) as total_cx
 , sum(system_level_push_opt_out) as system_level_push_opt_out
 , sum(system_level_push_opt_out)/ count(distinct dd_device_ID_filtered) as system_level_push_opt_out_pct
 , sum(system_level_push_opt_in) as system_level_push_opt_in
 , sum(system_level_push_opt_in)/ count(distinct dd_device_ID_filtered) as system_level_push_opt_in_pct
 from rollup 
-group by 1
+group by 1, 2
 )
 
 , res AS (
 SELECT o.*
 FROM opt_in_res o
-ORDER BY 1
+ORDER BY 1, 2
 )
 
 SELECT r1.bucket
+        , r1.segments
         , r1.total_cx AS exposure
         , r1.system_level_push_opt_out
         , r1.system_level_push_opt_out_pct
@@ -102,4 +107,5 @@ FROM res r1
 LEFT JOIN res r2
     ON r1.bucket != r2.bucket
     AND r2.bucket = 'control'
-ORDER BY 1
+    AND r1.segments = r2.segments
+ORDER BY 1, 2

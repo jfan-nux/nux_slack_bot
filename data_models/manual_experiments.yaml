@@ -22,6 +22,7 @@ experiments:
     end_date: "2025-09-30"
     bucket_key: "device_id"
     template: "onboarding"
+    segments: ["iOS", "Android"]
     version: 1
     expired: false
   

@@ -11,6 +11,7 @@ WITH exposure AS
 (SELECT  ee.tag
                , ee.result
                , ee.bucket_key
+               , LOWER(ee.segment) AS segments
                , replace(lower(CASE WHEN bucket_key like 'dx_%' then bucket_key
                     else 'dx_'||bucket_key end), '-') AS dd_device_ID_filtered
                , MIN(convert_timezone('UTC','America/Los_Angeles',ee.EXPOSURE_TIME)::date) AS day
@@ -22,7 +23,7 @@ AND experiment_version::INT = {{ version }}
 AND segment IN ({% for segment in segments %}'{{ segment }}'{% if not loop.last %}, {% endif %}{% endfor %})
 {%- endif %}
 AND convert_timezone('UTC','America/Los_Angeles',EXPOSURE_TIME) BETWEEN '{{ start_date }}' AND '{{ end_date }}'
-GROUP BY 1,2,3,4
+GROUP BY 1,2,3,4,5
 )
 
 , orders AS
@@ -46,6 +47,7 @@ WHERE convert_timezone('UTC','America/Los_Angeles',a.timestamp) BETWEEN '{{ star
 
 , checkout AS
 (SELECT  e.tag
+        , e.segments
         , COUNT(distinct e.dd_device_ID_filtered) as exposure_onboard
         , COUNT(DISTINCT CASE WHEN is_filtered_core = 1 THEN o.delivery_ID ELSE NULL END) orders
         , COUNT(DISTINCT CASE WHEN is_first_ordercart_DD = 1 AND is_filtered_core = 1 THEN o.delivery_ID ELSE NULL END) new_Cx
@@ -71,11 +73,12 @@ LEFT JOIN orders o
     ON e.dd_device_ID_filtered = o.dd_device_ID_filtered 
     AND e.day <= o.day
 WHERE TAG NOT IN ('internal_test','reserved')
-GROUP BY 1
-ORDER BY 1)
+GROUP BY 1, 2
+ORDER BY 1, 2)
 
 ,  MAU AS (
 SELECT  e.tag
+        , e.segments
         , COUNT(DISTINCT o.dd_device_ID_filtered) as MAU
         , COUNT(DISTINCT o.dd_device_ID_filtered) / COUNT(DISTINCT e.dd_device_ID_filtered) as MAU_rate
 FROM exposure e
@@ -84,8 +87,8 @@ LEFT JOIN orders o
     --AND e.day <= o.day
     AND o.day BETWEEN DATEADD('day',-28,current_date) AND DATEADD('day',-1,current_date) -- past 28 days orders
 -- WHERE e.day <= DATEADD('day',-28,'{{ end_date }}') --- exposed at least 28 days ago
-GROUP BY 1
-ORDER BY 1
+GROUP BY 1, 2
+ORDER BY 1, 2
 )
 
 , res AS
@@ -94,11 +97,12 @@ ORDER BY 1
         , m.mau_rate
 FROM checkout c
 JOIN MAU m 
-  on c.tag = m.tag
-ORDER BY 1
+  on c.tag = m.tag AND c.segments = m.segments
+ORDER BY 1, 2
 )
 
 SELECT r1.tag 
+        , r1.segments
         , r1.exposure_onboard AS exposure
         , r1.orders
         , r1.order_rate
@@ -144,4 +148,5 @@ FROM res r1
 LEFT JOIN res r2
     ON r1.tag != r2.tag
     AND r2.tag = 'control'
-ORDER BY 1 desc
+    AND r1.segments = r2.segments
+ORDER BY 1, 2 desc

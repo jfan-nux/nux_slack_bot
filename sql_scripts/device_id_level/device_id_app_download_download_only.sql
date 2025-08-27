@@ -11,12 +11,14 @@ Jinja2 Template Variables:
 - start_date: {{ start_date }}
 - end_date: {{ end_date }}
 - version: {{ version }}
+- segments: {{ segments }}
 #}
 
 
 WITH exposure AS (
 SELECT distinct ee.tag
               , ee.bucket_key
+              , LOWER(ee.segment) AS segments
               , replace(lower(CASE WHEN bucket_key like 'dx_%' then bucket_key
                     else 'dx_'||bucket_key end), '-') AS dd_device_ID_filtered
               , case when cast(custom_attributes:consumer_id as varchar) not like 'dx_%' then cast(custom_attributes:consumer_id as varchar) else null end as consumer_id
@@ -24,9 +26,13 @@ SELECT distinct ee.tag
 FROM proddb.public.fact_dedup_experiment_exposure ee
 WHERE experiment_name = '{{ experiment_name }}'
 AND experiment_version = {{ version }}
+{%- if segments %}
+AND segment IN ({% for segment in segments %}'{{ segment }}'{% if not loop.last %}, {% endif %}{% endfor %})
+{%- else %}
 and segment = 'Users'
+{%- endif %}
 AND convert_timezone('UTC','America/Los_Angeles',EXPOSURE_TIME) BETWEEN '{{ start_date }}' AND '{{ end_date }}'
-GROUP BY 1,2,3,4
+GROUP BY 1,2,3,4,5
 )
 
 --build in adjust logic 
@@ -50,6 +56,7 @@ order by event_date desc
 
 , app_downloads as (
 select e.tag as tag
+, e.segments
 , count(distinct e.dd_device_ID_filtered) as exposures
 , count(distinct ad.app_device_id) as app_downloads
 , count(distinct ad.app_device_id)/count(distinct e.dd_device_ID_filtered) as app_download_rate
@@ -58,7 +65,7 @@ select e.tag as tag
     ON (e.dd_device_ID_filtered = ad.mweb_id 
     OR e.consumer_id = ad.mweb_id)
     AND e.day <= ad.day
-group by 1
+group by 1, 2
   ) 
 
 , res AS (
@@ -79,4 +86,5 @@ FROM res r1
 LEFT JOIN res r2
     ON r1.tag != r2.tag
     AND r2.tag = 'control'
-ORDER BY 1 desc
+    AND r1.segments = r2.segments
+ORDER BY 1, 2 desc

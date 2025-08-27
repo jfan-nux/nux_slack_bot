@@ -4,11 +4,13 @@ Jinja2 Template Variables:
 - start_date: {{ start_date }}
 - end_date: {{ end_date }}
 - version: {{ version }}
+- segments: {{ segments }}
 #}
 
 WITH exposure AS (
 SELECT distinct ee.tag
               , ee.bucket_key
+              , LOWER(ee.segment) AS segments
               , replace(lower(CASE WHEN bucket_key like 'dx_%' then bucket_key
                     else 'dx_'||bucket_key end), '-') AS dd_device_ID_filtered
               , case when cast(custom_attributes:consumer_id as varchar) not like 'dx_%' then cast(custom_attributes:consumer_id as varchar) else null end as consumer_id
@@ -16,9 +18,13 @@ SELECT distinct ee.tag
 FROM proddb.public.fact_dedup_experiment_exposure ee
 WHERE experiment_name = '{{ experiment_name }}'
 AND experiment_version = {{ version }}
+{%- if segments %}
+AND segment IN ({% for segment in segments %}'{{ segment }}'{% if not loop.last %}, {% endif %}{% endfor %})
+{%- else %}
 and segment = 'Users'
+{%- endif %}
 AND convert_timezone('UTC','America/Los_Angeles',EXPOSURE_TIME) BETWEEN '{{ start_date }}' AND '{{ end_date }}'
-GROUP BY 1,2,3,4
+GROUP BY 1,2,3,4,5
 )
 
 , adjust_links_straight_to_app AS (
@@ -130,6 +136,7 @@ JOIN SUMA su
 
 , SUMA_res_mweb AS
 (SELECT e.tag
+        , e.segments
         , COUNT(DISTINCT e.dd_device_ID_filtered||e.day) AS exposure
         , COUNT(DISTINCT s.user_ID) AS SUMA
 FROM exposure_with_both_ids e
@@ -137,11 +144,12 @@ LEFT JOIN SUMA_signup s
     ON e.dd_device_ID_filtered = s.dd_device_ID_filtered
     AND e.day <= s.day
 WHERE TAG != 'reserve'
-GROUP BY 1
+GROUP BY 1, 2
 )
 
 , SUMA_res_app AS
 (SELECT e.tag
+        , e.segments
         , COUNT(DISTINCT e.dd_device_ID_filtered||e.day) AS exposure
         , COUNT(DISTINCT s.user_ID) AS SUMA
 FROM exposure_with_both_ids e
@@ -149,21 +157,23 @@ LEFT JOIN SUMA_signup s
     ON e.app_device_id = s.dd_device_ID_filtered
     AND e.day <= s.day
 WHERE TAG != 'reserve'
-GROUP BY 1
+GROUP BY 1, 2
 )
 , SUMA_res as (
 select a.tag 
+, a.segments
 , sum(a.exposure) as exposure
 , sum(a.SUMA) + sum(zeroifnull(b.SUMA)) as SUMA 
 , (sum(a.SUMA) + sum(zeroifnull(b.SUMA)))/sum(a.exposure) as SUMA_rate
 from SUMA_res_mweb a 
 left join SUMA_res_app b 
-on a.tag = b.tag
-group by 1
+on a.tag = b.tag AND a.segments = b.segments
+group by 1, 2
 )
 
 , mweb_Auth_success AS
 (SELECT e.tag
+        , e.segments
         , COUNT(DISTINCT e.dd_device_ID_filtered||e.day) AS exposure
         , COUNT(DISTINCT s.dd_device_ID_filtered||s.day) AS overall_signup
 FROM exposure e
@@ -171,12 +181,13 @@ LEFT JOIN signup_success_overall s
     ON e.dd_device_ID_filtered = s.dd_device_ID_filtered
     AND e.day <= s.day
 WHERE TAG != 'reserve'
-GROUP BY 1
-ORDER BY 1
+GROUP BY 1, 2
+ORDER BY 1, 2
 )
 
 , app_Auth_success AS
 (SELECT e.tag
+        , e.segments
         , COUNT(DISTINCT e.dd_device_ID_filtered||e.day) AS exposure
         , COUNT(DISTINCT s.dd_device_ID_filtered||s.day) AS overall_signup
 FROM exposure_with_both_ids e
@@ -184,18 +195,19 @@ LEFT JOIN signup_success_overall s
     ON e.app_device_id = s.dd_device_ID_filtered
     AND e.day <= s.day
 WHERE TAG != 'reserve'
-GROUP BY 1
-ORDER BY 1
+GROUP BY 1, 2
+ORDER BY 1, 2
 )
 , auth_success as (
 select a.tag 
+, a.segments
 , sum(a.exposure) as exposure
 , sum(a.overall_signup) + sum(zeroifnull(b.overall_signup)) as overall_signup 
 , (sum(a.overall_signup) + sum(zeroifnull(b.overall_signup)))/sum(a.exposure) as overall_signup_rate
 from mweb_Auth_success a 
 left join app_Auth_success b 
-on a.tag = b.tag
-group by 1
+on a.tag = b.tag AND a.segments = b.segments
+group by 1, 2
 )
 
 , res AS (
@@ -204,11 +216,12 @@ SELECT a.*
         , sr.SUMA_rate
 FROM auth_success a
 LEFT JOIN SUMA_res sr
-  ON a.tag = sr.tag
+  ON a.tag = sr.tag AND a.segments = sr.segments
 ORDER BY 1, 2
 )
 
 SELECT r1.tag 
+      , r1.segments
       , r1.exposure
       , r1.SUMA
       , r1.SUMA_rate
@@ -229,4 +242,5 @@ FROM res r1
 LEFT JOIN res r2
     ON r1.tag != r2.tag
     AND r2.tag = 'control'
+    AND r1.segments = r2.segments
 ORDER BY 1, 2 desc

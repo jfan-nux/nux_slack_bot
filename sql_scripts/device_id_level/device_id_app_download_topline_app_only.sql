@@ -4,12 +4,14 @@ Jinja2 Template Variables:
 - start_date: {{ start_date }}
 - end_date: {{ end_date }}
 - version: {{ version }}
+- segments: {{ segments }}
 #}
 
 
 WITH exposure AS (
 SELECT distinct ee.tag
               , ee.bucket_key
+              , LOWER(ee.segment) AS segments
               , replace(lower(CASE WHEN bucket_key like 'dx_%' then bucket_key
                     else 'dx_'||bucket_key end), '-') AS dd_device_ID_filtered
               , case when cast(custom_attributes:consumer_id as varchar) not like 'dx_%' then cast(custom_attributes:consumer_id as varchar) else null end as consumer_id
@@ -17,9 +19,13 @@ SELECT distinct ee.tag
 FROM proddb.public.fact_dedup_experiment_exposure ee
 WHERE experiment_name = '{{ experiment_name }}'
 AND experiment_version = {{ version }}
+{%- if segments %}
+AND segment IN ({% for segment in segments %}'{{ segment }}'{% if not loop.last %}, {% endif %}{% endfor %})
+{%- else %}
 and segment = 'Users'
+{%- endif %}
 AND convert_timezone('UTC','America/Los_Angeles',EXPOSURE_TIME) BETWEEN '{{ start_date }}' AND '{{ end_date }}'
-GROUP BY 1,2,3,4
+GROUP BY 1,2,3,4,5
 )
 
 , login_success_overall AS (
@@ -211,6 +217,7 @@ order by event_date desc
 (
   SELECT  
     DISTINCT e.tag AS tag
+    , e.segments
     , e.dd_device_id_filtered AS dd_device_ID_filtered
     , o.delivery_id AS delivery_id
     , o.is_first_ordercart_dd AS is_first_ordercart_dd
@@ -253,6 +260,7 @@ SELECT * FROM app_checkout
 (
   SELECT
       tag
+    , segments
     , COUNT(DISTINCT dd_device_ID_filtered) AS exposure
     , COUNT(DISTINCT delivery_id) AS orders
     , COUNT(DISTINCT CASE WHEN is_first_ordercart_dd = TRUE THEN delivery_id END) AS new_cx
@@ -283,7 +291,7 @@ SELECT * FROM app_checkout
     
   FROM 
     checkout_root
-  GROUP BY 1
+  GROUP BY 1, 2
 )
 
 , res AS (
@@ -318,4 +326,5 @@ FROM res r1
 LEFT JOIN res r2
     ON r1.tag != r2.tag
     AND r2.tag = 'control'
-ORDER BY 1 desc
+    AND r1.segments = r2.segments
+ORDER BY 1, 2 desc

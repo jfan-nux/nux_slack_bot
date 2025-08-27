@@ -23,7 +23,7 @@ def store_metrics(metrics: List[ExperimentMetric]):
     insert_query = """
     INSERT INTO proddb.fionafan.experiment_metrics_results (
         experiment_name, start_date, end_date, version,
-        granularity, template_name, metric_name, treatment_arm, metric_type, dimension, template_rank, metric_rank, desired_direction,
+        granularity, template_name, metric_name, treatment_arm, metric_type, dimension, segments, template_rank, metric_rank, desired_direction,
         treatment_numerator, treatment_denominator, treatment_value, treatment_sample_size, treatment_std,
         control_numerator, control_denominator, control_value, control_sample_size, control_std,
         lift, absolute_difference, p_value, confidence_interval_lower, confidence_interval_upper,
@@ -63,6 +63,7 @@ def store_metrics(metrics: List[ExperimentMetric]):
             {safe_value(metric.treatment_arm)},
             {safe_value(metric.metric_type)},
             {safe_value(metric.dimension)},
+            {safe_value(metric.segments)},
             {safe_value(metric.template_rank)},
             {safe_value(metric.metric_rank)},
             {safe_value(metric.desired_direction)},
@@ -142,6 +143,7 @@ def create_metrics_table():
         treatment_arm VARCHAR(50), -- e.g., 'treatment', 'variant_1' (NO control rows)
         metric_type VARCHAR(20), -- 'rate' or 'continuous'
         dimension VARCHAR(50), -- e.g., 'app', 'app_clip', NULL for most metrics
+        segments VARCHAR(50), -- e.g., 'ios', 'android', NULL
         template_rank INT, -- From metrics_metadata.yaml
         metric_rank INT, -- From metrics_metadata.yaml
         desired_direction VARCHAR(20), -- From metrics_metadata.yaml
