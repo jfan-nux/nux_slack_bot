@@ -99,6 +99,7 @@ ORDER BY 1
 )
 
 SELECT r1.tag 
+        , r1.segments
         , r1.exposure_onboard  
         , r1.explore_view
         , r1.explore_rate
