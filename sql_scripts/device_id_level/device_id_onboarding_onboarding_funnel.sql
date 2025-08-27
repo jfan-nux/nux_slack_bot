@@ -213,6 +213,7 @@ ORDER BY 1
 )
 
 SELECT r1.tag
+        , r1.segments
         , r1.exposure
         , r1.start_page_view
         , r1.start_page_view_rate

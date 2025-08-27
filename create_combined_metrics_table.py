@@ -128,6 +128,8 @@ def main():
                 segments,
                 control_value,
                 treatment_value,
+                control_exposure,
+                treatment_exposure,
                 lift,
                 p_value,
                 statsig_string,
