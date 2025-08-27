@@ -15,7 +15,12 @@ WITH latest_results AS (
         ROW_NUMBER() OVER (
             PARTITION BY 
                 dear.experiment_name,
-                dear.analysis_name,
+                -- Group by platform when ios/android in analysis_name, otherwise by full analysis_name
+                CASE 
+                    WHEN LOWER(dear.analysis_name) LIKE '%ios%' THEN 'ios'
+                    WHEN LOWER(dear.analysis_name) LIKE '%android%' THEN 'android'
+                    ELSE dear.analysis_name
+                END,
                 dear.metric_name,
                 dear.dimension_name,
                 CASE 

@@ -5,11 +5,13 @@ Jinja2 Template Variables:
 - start_date: {{ start_date }}
 - end_date: {{ end_date }}
 - version: {{ version }}
+- segments: {{ segments }}
 #}
 
 WITH exposure AS (
 SELECT distinct ee.tag
               , ee.bucket_key
+              , LOWER(ee.segment) AS segments
               , replace(lower(CASE WHEN bucket_key like 'dx_%' then bucket_key
                     else 'dx_'||bucket_key end), '-') AS dd_device_ID_filtered
               , case when cast(custom_attributes:consumer_id as varchar) not like 'dx_%' then cast(custom_attributes:consumer_id as varchar) else null end as consumer_id
@@ -17,9 +19,13 @@ SELECT distinct ee.tag
 FROM proddb.public.fact_dedup_experiment_exposure ee
 WHERE experiment_name = '{{ experiment_name }}'
 AND experiment_version = {{ version }}
+{%- if segments %}
+AND segment IN ({% for segment in segments %}'{{ segment }}'{% if not loop.last %}, {% endif %}{% endfor %})
+{%- else %}
 and segment = 'Users'
+{%- endif %}
 AND convert_timezone('UTC','America/Los_Angeles',EXPOSURE_TIME) BETWEEN '{{ start_date }}' AND '{{ end_date }}'
-GROUP BY 1,2,3,4
+GROUP BY 1,2,3,4,5
 )
 
 , login_success_overall AS (
@@ -230,6 +236,7 @@ ON e.dd_device_ID_filtered = ac.dd_device_ID_filtered
 (
   SELECT  
     DISTINCT e.tag AS tag
+    , e.segments
     , e.dd_device_id_filtered AS dd_device_ID_filtered
     , o.delivery_id AS delivery_id
     , o.is_first_ordercart_dd AS is_first_ordercart_dd
@@ -249,6 +256,7 @@ ON e.dd_device_ID_filtered = ac.dd_device_ID_filtered
 (
   SELECT  
     DISTINCT e.tag AS tag
+    , e.segments
     , e.dd_device_id_filtered AS dd_device_ID_filtered
     , o.delivery_id AS delivery_id
     , o.is_first_ordercart_dd AS is_first_ordercart_dd
@@ -273,6 +281,7 @@ ON e.dd_device_ID_filtered = ac.dd_device_ID_filtered
 (
   SELECT
       tag
+    , segments
     , COUNT(DISTINCT dd_device_ID_filtered) AS exposure
     , COUNT(DISTINCT delivery_id) AS orders
     , COUNT(DISTINCT CASE WHEN is_first_ordercart_dd = TRUE THEN delivery_id END) AS new_cx
@@ -303,7 +312,7 @@ ON e.dd_device_ID_filtered = ac.dd_device_ID_filtered
     
   FROM 
     checkout_root
-  GROUP BY 1
+  GROUP BY 1, 2
 )
 
 --------------------- MAU data ---------------------
@@ -311,65 +320,72 @@ ON e.dd_device_ID_filtered = ac.dd_device_ID_filtered
 (
   SELECT 
     tag
+    ,segments
     ,dd_device_ID_filtered
     ,MAX(app_is_mau) AS app_is_mau
   FROM 
    (
     SELECT  
         e.tag AS tag
+        ,e.segments
         ,e.dd_device_ID_filtered AS dd_device_ID_filtered
         ,CASE WHEN o.dd_device_ID_filtered IS NOT NULL THEN 1 ELSE 0 END AS app_is_mau
     FROM 
       exposure_with_both_ids e
       LEFT JOIN app_orders o ON e.app_device_id = o.dd_device_ID_filtered AND (o.day BETWEEN DATEADD('day',-28,least('{{ end_date }}',current_date())) AND DATEADD('day',-1,least('{{ end_date }}',current_date()))) -- past 28 days orders
     )p 
-  GROUP BY 1,2
+  GROUP BY 1,2,3
 )
 
 ,mweb_MAU AS 
 (
   SELECT 
     tag
+    ,segments
     ,dd_device_ID_filtered
     ,MAX(mweb_is_mau) AS mweb_is_mau
   FROM 
    (
     SELECT  
         e.tag AS tag
+        ,e.segments
         ,e.dd_device_ID_filtered AS dd_device_ID_filtered
         ,CASE WHEN o.dd_device_ID_filtered IS NOT NULL THEN 1 ELSE 0 END AS mweb_is_mau
     FROM 
        exposure_with_both_ids e
        LEFT JOIN mweb_orders o ON e.dd_device_ID_filtered = o.dd_device_ID_filtered AND o.day BETWEEN DATEADD('day',-28,least('{{ end_date }}',current_date())) AND DATEADD('day',-1,least('{{ end_date }}',current_date()))
     )p 
-  GROUP BY 1,2
+  GROUP BY 1,2,3
 )
 
 ,mau_root AS 
 (
 SELECT 
     a.tag AS tag
+    ,a.segments
     ,a.dd_device_ID_filtered AS dd_device_ID_filtered
     ,greatest(app_is_mau,mweb_is_mau) AS is_mau
 FROM 
     app_MAU a 
-    LEFT JOIN mweb_MAU b ON a.dd_device_ID_filtered::VARCHAR = b.dd_device_ID_filtered::VARCHAR
+    LEFT JOIN mweb_MAU b ON a.dd_device_ID_filtered::VARCHAR = b.dd_device_ID_filtered::VARCHAR AND a.segments = b.segments
 )
 
 ,mau AS 
 (
   SELECT 
     tag
+    ,segments
     ,COUNT(DISTINCT dd_device_ID_filtered) AS exposure
     ,SUM(is_mau) AS mau
     ,mau/exposure AS mau_rate
   FROM 
     mau_root
-  GROUP BY 1
+  GROUP BY 1, 2
 )
 
 , mweb_Auth_success AS
 (SELECT e.tag
+        , e.segments
         , COUNT(DISTINCT e.dd_device_ID_filtered||e.day) AS exposure
         , COUNT(DISTINCT l.dd_device_ID_filtered||l.day) AS overall_login
         , COUNT(DISTINCT s.dd_device_ID_filtered||s.day) AS overall_signup
@@ -381,12 +397,13 @@ LEFT JOIN signup_success_overall s
     ON e.dd_device_ID_filtered = s.dd_device_ID_filtered
     AND e.day <= s.day
 WHERE TAG != 'reserve'
-GROUP BY 1
-ORDER BY 1
+GROUP BY 1, 2
+ORDER BY 1, 2
 )
 
 , app_Auth_success AS
 (SELECT e.tag
+        , e.segments
         , COUNT(DISTINCT e.dd_device_ID_filtered||e.day) AS exposure
         , COUNT(DISTINCT l.dd_device_ID_filtered||l.day) AS overall_login
         , COUNT(DISTINCT s.dd_device_ID_filtered||s.day) AS overall_signup
@@ -398,11 +415,12 @@ LEFT JOIN signup_success_overall s
     ON e.app_device_id = s.dd_device_ID_filtered
     AND e.day <= s.day
 WHERE TAG != 'reserve'
-GROUP BY 1
-ORDER BY 1
+GROUP BY 1, 2
+ORDER BY 1, 2
 )
 , auth_success as (
 select a.tag 
+, a.segments
 , sum(a.exposure) as exposure
 , sum(a.overall_login) + sum(zeroifnull(b.overall_login)) as overall_login 
 , sum(a.overall_signup) + sum(zeroifnull(b.overall_signup)) as overall_signup 
@@ -410,8 +428,8 @@ select a.tag
 , (sum(a.overall_signup) + sum(zeroifnull(b.overall_signup)))/sum(a.exposure) as overall_signup_rate
 from mweb_Auth_success a 
 left join app_Auth_success b 
-on a.tag = b.tag
-group by 1
+on a.tag = b.tag AND a.segments = b.segments
+group by 1, 2
 )
 
 
@@ -425,9 +443,9 @@ SELECT c.*
   , m.MAU_rate
 FROM checkout c 
 JOIN auth_success a 
-  ON c.tag = a.tag 
+  ON c.tag = a.tag AND c.segments = a.segments
 JOIN MAU m 
-  ON c.tag = m.tag 
+  ON c.tag = m.tag AND c.segments = m.segments
 )
 
 SELECT r1.*
@@ -477,4 +495,5 @@ FROM res r1
 LEFT JOIN res r2
     ON r1.tag != r2.tag
     AND r2.tag = 'control'
-ORDER BY 1 desc
+    AND r1.segments = r2.segments
+ORDER BY 1, 2 desc

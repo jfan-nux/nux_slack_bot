@@ -1,13 +1,16 @@
--- drop table if exists proddb.fionafan.experiment_metrics_results;
+drop table if exists proddb.fionafan.combined_experiment_metrics;
 select * from proddb.fionafan.experiment_metrics_results 
 where insert_timestamp = (select max(insert_timestamp) from proddb.fionafan.experiment_metrics_results) ;
 -- and statsig_string = 'insufficient_data';
-
-select 
+select * from proddb.fionafan.combined_experiment_metrics
+where created_at = (select max(created_at) from proddb.fionafan.combined_experiment_metrics) ;
+;
+select experiment_name,
 template_name, metric_name, treatment_value, control_value, lift, p_value, statsig_string, desired_direction,
 from proddb.fionafan.experiment_metrics_results 
 where insert_timestamp = (select max(insert_timestamp) from proddb.fionafan.experiment_metrics_results) 
 and experiment_name = 'should_pin_leaderboard_carousel'
+-- and treatment_value = control_value
 -- and template_name = 'app_download'
 order by experiment_name, template_rank, metric_rank
 -- and template_rank is null or metric_rank is null
@@ -155,13 +158,14 @@ ORDER BY t.analysis_name, t.metric_name;
 SELECT  date_trunc(day, convert_timezone('UTC','America/Los_Angeles',EXPOSURE_TIME)) as day, custom_attributes:platform, count(distinct bucket_key)
 FROM proddb.public.fact_dedup_experiment_exposure ee
 WHERE experiment_name = 'should_pin_leaderboard_carousel'--'leaderboard_customer_favorites_carousel_v3'
-AND experiment_version::INT = 1
+AND experiment_version::INT = 2
 -- AND segment IN ('Users')
 AND tag <> 'overridden'
-AND convert_timezone('UTC','America/Los_Angeles',EXPOSURE_TIME) BETWEEN '2025-08-21' AND '2025-09-30'
+AND convert_timezone('UTC','America/Los_Angeles',EXPOSURE_TIME) BETWEEN '2025-08-25' AND '2025-09-30'
 GROUP BY all
 order by all
 ;
+
 
 with base as (SELECT  custom_attributes:platform as platform, bucket_key as consumer_ID
 FROM proddb.public.fact_dedup_experiment_exposure ee
@@ -249,3 +253,17 @@ SELECT
 FROM platform_percentages
 GROUP BY day, total_exposures
 ORDER BY day;
+
+
+
+
+
+select distinct experiment_name
+FROM proddb.public.fact_dedup_experiment_exposure ee
+WHERE 1=1 
+AND convert_timezone('UTC','America/Los_Angeles',EXPOSURE_TIME) BETWEEN '2025-08-24' AND '2025-09-30'
+AND experiment_name = '%cx_mobile_onboarding_preferences%'--'leaderboard_customer_favorites_carousel_v3'
+AND experiment_version::INT = 1
+-- AND segment IN ('Users')
+AND tag <> 'overridden'
+GROUP BY all

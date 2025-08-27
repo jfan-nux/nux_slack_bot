@@ -5,16 +5,21 @@ Jinja2 Template Variables:
 - start_date: {{ start_date }}
 - end_date: {{ end_date }}
 - version: {{ version }}
+- segments: {{ segments }}
 #}
 with exposure as (
 select tag
+, LOWER(segment) AS segments
 , custom_attributes:consumer_id::varchar as consumer_id
 , min(exposure_time::date) as day
 FROM PRODDB.PUBLIC.FACT_DEDUP_EXPERIMENT_EXPOSURE 
 where experiment_name = '{{ experiment_name }}'
 and exposure_time between '{{ start_date }}' and '{{ end_date }}'
 and bucket_key_type = 'device_id'
-group by 1,2
+{%- if segments %}
+AND segment IN ({% for segment in segments %}'{{ segment }}'{% if not loop.last %}, {% endif %}{% endfor %})
+{%- endif %}
+group by 1,2,3
 ) 
 
 
@@ -51,6 +56,7 @@ and cast(consumer_id as varchar) in ( select consumer_id from full_consumer_id_l
 
 , app_downloads as (
 SELECT e.tag
+, e.segments
 , COUNT(DISTINCT e.consumer_id) AS total_app_clip_launch
 , count(distinct d.consumer_id) as total_app_installs
 , count(distinct d.consumer_id)/total_app_clip_launch as app_install_rate
@@ -58,7 +64,7 @@ FROM full_consumer_id_list e
 left join app_installs d
 on e.consumer_id  = d.consumer_id
 AND e.day <= d.day
-GROUP BY 1
+GROUP BY 1, 2
 ) 
 
 
@@ -81,4 +87,5 @@ FROM res r1
 LEFT JOIN res r2
     ON r1.tag != r2.tag
     AND r2.tag = 'control'
-ORDER BY 1 desc
+    AND r1.segments = r2.segments
+ORDER BY 1, 2 desc

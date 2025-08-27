@@ -4,16 +4,21 @@ Jinja2 Template Variables:
 - start_date: {{ start_date }}
 - end_date: {{ end_date }}
 - version: {{ version }}
+- segments: {{ segments }}
 #}
 with exposure as (
 select tag
+, LOWER(segment) AS segments
 , custom_attributes:consumer_id::varchar as consumer_id
 , min(exposure_time::date) as day
 FROM PRODDB.PUBLIC.FACT_DEDUP_EXPERIMENT_EXPOSURE 
 where experiment_name = '{{ experiment_name }}'
 and exposure_time between '{{ start_date }}' and '{{ end_date }}'
 and bucket_key_type = 'device_id'
-group by 1,2
+{%- if segments %}
+AND segment IN ({% for segment in segments %}'{{ segment }}'{% if not loop.last %}, {% endif %}{% endfor %})
+{%- endif %}
+group by 1,2,3
 ) 
  
 , signin as (
@@ -29,6 +34,7 @@ select distinct case when s.GUEST_CONSUMER_ID is null then l.consumer_id
  when s.GUEST_CONSUMER_ID is not null then s.logged_in_consumer_id end as consumer_id
 , l.day 
 , l.tag
+, l.segments
 from exposure l 
 left join signin s 
 on s.GUEST_CONSUMER_ID = l.consumer_id
@@ -48,6 +54,7 @@ and cast(consumer_id as varchar) in ( select consumer_id from full_consumer_id_l
 select distinct l.consumer_id
  , l.day
  , l.tag
+ , l.segments
  , replace(lower(CASE WHEN a.DD_device_id like 'dx_%' then a.DD_device_id
                     else 'dx_'||a.DD_device_id end), '-') AS dd_device_ID_filtered
 from full_consumer_id_list l 
@@ -98,6 +105,7 @@ from app_orders
 )
 , checkout_rollup AS (
 SELECT e.tag
+, e.segments
 , e.consumer_id
 , COUNT(DISTINCT o.delivery_ID ) orders
 , IFF(COUNT(DISTINCT o.delivery_ID) = 0, NULL, COUNT(DISTINCT o.delivery_ID)) as order_freq_numerator
@@ -106,20 +114,22 @@ FROM full_consumer_id_list_w_app_downloads e
 LEFT JOIN all_orders o
 on (e.consumer_id = o.consumer_id
 or e.dd_device_ID_filtered = o.dd_device_ID_filtered)
-GROUP BY 1,2
+GROUP BY 1,2,3
 )
 , checkout as (
 select tag 
+, segments
 , count(distinct consumer_id) as total_cx 
 , avg(orders) as order_rate
 , avg(order_freq_numerator) as order_frequency
 , avg(new_cx) as new_cx_rate
 from checkout_rollup 
-group by 1
+group by 1, 2
 )
 
 , MAU AS (
 SELECT  e.tag
+        , e.segments
         , COUNT(DISTINCT o.consumer_id) as MAU
         , COUNT(DISTINCT o.consumer_id) / COUNT(DISTINCT e.consumer_id) as MAU_rate
 FROM full_consumer_id_list_w_app_downloads e
@@ -127,8 +137,8 @@ LEFT JOIN all_orders o
 on (e.consumer_id = o.consumer_id
 or e.dd_device_ID_filtered = o.dd_device_ID_filtered)
  AND o.day BETWEEN DATEADD('day',-28,current_date) AND DATEADD('day',-1,current_date)
-GROUP BY 1
-ORDER BY 1
+GROUP BY 1, 2
+ORDER BY 1, 2
 )
 , res as (
 select c.*
@@ -136,7 +146,7 @@ select c.*
 , m.MAU_rate
 from checkout c 
 left join MAU m 
-on m.tag = c.tag 
+on m.tag = c.tag AND m.segments = c.segments
 )
 
 SELECT r1.*
@@ -158,4 +168,5 @@ FROM res r1
 LEFT JOIN res r2
     ON r1.tag != r2.tag
     AND r2.tag = 'control'
-ORDER BY 1 desc
+    AND r1.segments = r2.segments
+ORDER BY 1, 2 desc

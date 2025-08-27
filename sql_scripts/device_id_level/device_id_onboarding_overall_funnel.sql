@@ -11,6 +11,7 @@ WITH exposure AS
 (SELECT  ee.tag
                , ee.result
                , ee.bucket_key
+               , LOWER(ee.segment) AS segments
                , replace(lower(CASE WHEN bucket_key like 'dx_%' then bucket_key
                     else 'dx_'||bucket_key end), '-') AS dd_device_ID_filtered
                , MIN(convert_timezone('UTC','America/Los_Angeles',ee.EXPOSURE_TIME)::date) AS day
@@ -22,7 +23,7 @@ AND experiment_version::INT = {{ version }}
 AND segment IN ({% for segment in segments %}'{{ segment }}'{% if not loop.last %}, {% endif %}{% endfor %})
 {%- endif %}
 AND convert_timezone('UTC','America/Los_Angeles',EXPOSURE_TIME) BETWEEN '{{ start_date }}' AND '{{ end_date }}'
-GROUP BY 1,2,3,4
+GROUP BY 1,2,3,4,5
 )
 
 , explore_page AS
@@ -61,6 +62,7 @@ WHERE convert_timezone('UTC','America/Los_Angeles',timestamp) BETWEEN '{{ start_
 
 , explore AS
 (SELECT DISTINCT e.tag
+                , e.segments
                 , e.dd_device_ID_filtered
                 , e.day
                 , MAX(CASE WHEN ep.dd_device_ID_filtered IS NOT NULL THEN 1 ELSE 0 END) AS explore_view
@@ -80,11 +82,12 @@ LEFT JOIN cart_page cp
 LEFT JOIN checkout_page c
     ON e.dd_device_ID_filtered = c.dd_device_ID_filtered
     AND e.day <= c.day
-GROUP BY 1,2,3
+GROUP BY 1,2,3,4
 )
 
 , explore_res AS
 (SELECT tag
+        , segments
         , count(distinct dd_device_ID_filtered) as exposure_onboard
         , SUM(explore_view) explore_view
         , SUM(explore_view) / COUNT(DISTINCT e.dd_device_ID_filtered||e.day) AS explore_rate
@@ -95,8 +98,8 @@ GROUP BY 1,2,3
         , SUM(checkout_view)  AS checkout_view
         , SUM(checkout_view) / nullif(SUM(cart_view),0) AS checkout_rate
 FROM explore e
-GROUP BY 1
-ORDER BY 1)
+GROUP BY 1, 2
+ORDER BY 1, 2)
 
 , res AS
 (SELECT * 
@@ -135,4 +138,5 @@ FROM res r1
 LEFT JOIN res r2
     ON r1.tag != r2.tag
     AND r2.tag = 'control'
-ORDER BY 1 desc
+    AND r1.segments = r2.segments
+ORDER BY 1, 2 desc

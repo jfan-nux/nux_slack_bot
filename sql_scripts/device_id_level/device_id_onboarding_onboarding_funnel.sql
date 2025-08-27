@@ -13,7 +13,7 @@ WITH exposure AS
                , ee.bucket_key
                , replace(lower(CASE WHEN bucket_key like 'dx_%' then bucket_key
                     else 'dx_'||bucket_key end), '-') AS dd_device_ID_filtered
-                , segment
+                , LOWER(ee.segment) AS segments
                , MIN(convert_timezone('UTC','America/Los_Angeles',ee.EXPOSURE_TIME)::date) AS day
                , MIN(convert_timezone('UTC','America/Los_Angeles',ee.EXPOSURE_TIME)) EXPOSURE_TIME
 FROM proddb.public.fact_dedup_experiment_exposure ee
@@ -130,6 +130,7 @@ WHERE iguazu_timestamp BETWEEN '{{ start_date }}' AND '{{ end_date }}'
 
 , funnel AS (
 SELECT DISTINCT ee.tag
+                , ee.segments
                 , ee.dd_device_ID_filtered
                 , ee.day
                 , MAX(CASE WHEN a.dd_device_ID_filtered IS NOT NULL THEN 1 ELSE 0 END) AS start_page_view
@@ -173,11 +174,12 @@ LEFT JOIN end_page_view g
 LEFT JOIN end_page_click h
     ON ee.dd_device_ID_filtered = h.dd_device_ID_filtered
     AND ee.day <= h.day    
-GROUP BY 1,2,3
+GROUP BY 1,2,3,4
 )
 
 , funnel_res AS (
 SELECT tag
+        , segments
         , count(distinct dd_device_ID_filtered) as exposure
         , SUM(start_page_view) start_page_view
         , SUM(start_page_view) / COUNT(DISTINCT dd_device_ID_filtered) AS start_page_view_rate
@@ -201,7 +203,7 @@ SELECT tag
         , SUM(end_page_click) / nullif(SUM(end_page_view),0) AS end_page_click_rate  
         , SUM(att_click) / SUM(start_page_view) as onboarding_completion
 FROM funnel 
-GROUP BY 1
+GROUP BY 1, 2
 )
 
 , res AS (
@@ -274,4 +276,5 @@ FROM res r1
 LEFT JOIN res r2
     ON r1.tag != r2.tag
     AND r2.tag = 'control'
-ORDER BY 1
+    AND r1.segments = r2.segments
+ORDER BY 1, 2

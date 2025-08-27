@@ -5,16 +5,21 @@ Jinja2 Template Variables:
 - start_date: {{ start_date }}
 - end_date: {{ end_date }}
 - version: {{ version }}
+- segments: {{ segments }}
 #}
 with exposure as (
 select tag
+, LOWER(segment) AS segments
 , custom_attributes:consumer_id::varchar as consumer_id
 , min(exposure_time::date) as day
 FROM PRODDB.PUBLIC.FACT_DEDUP_EXPERIMENT_EXPOSURE 
 where experiment_name = '{{ experiment_name }}'
 and exposure_time between '{{ start_date }}' and '{{ end_date }}'
 and bucket_key_type = 'device_id'
-group by 1,2
+{%- if segments %}
+AND segment IN ({% for segment in segments %}'{{ segment }}'{% if not loop.last %}, {% endif %}{% endfor %})
+{%- endif %}
+group by 1,2,3
 ) 
 
 , checkout_page AS (
@@ -138,6 +143,7 @@ or s.logged_in_consumer_id = l.consumer_id
 , funnel AS (
 SELECT DISTINCT s.consumer_id
 , s.tag
+, s.segments
                 , MAX(CASE WHEN cop.consumer_id IS NOT NULL THEN 1 ELSE 0 END) AS checkout_page
                 , MAX(CASE WHEN cs.consumer_id IS NOT NULL THEN 1 ELSE 0 END) AS checkout_success
                 , MAX(CASE WHEN cpsce.consumer_id IS NOT NULL and cpsce.consumer_id IS NOT NULL THEN 1 ELSE 0 END) AS checkout_page_system_checkout_error                    
@@ -179,11 +185,12 @@ and s.day = e.day
 -- on s.consumer_id  = f.consumer_id 
 -- and s.day = f.day
 
-GROUP BY 1,2
+GROUP BY 1,2,3
 )
 
 , checkout_funnel_res AS (
   SELECT tag
+, segments
 , count(distinct consumer_id) as total_cx
 , SUM(checkout_page) checkout_page
 , SUM(checkout_page) / count(distinct consumer_id) as checkout_rate
@@ -204,7 +211,7 @@ GROUP BY 1,2
 -- , SUM(Payments_Set_Selected) Payments_Set_Selected
 -- , SUM(Payments_Set_Selected) / NULLIF(SUM(checkout_page),0) AS Payments_Set_Selected_rate
 FROM funnel e
-GROUP BY 1
+GROUP BY 1, 2
 )
 
 , res AS (
@@ -264,4 +271,5 @@ FROM res r1
 LEFT JOIN res r2
     ON r1.tag != r2.tag
     AND r2.tag = 'control'
-ORDER BY 1 desc
+    AND r1.segments = r2.segments
+ORDER BY 1, 2 desc

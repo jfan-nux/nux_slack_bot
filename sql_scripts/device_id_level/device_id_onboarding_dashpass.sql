@@ -11,6 +11,7 @@ WITH exposure AS
 (SELECT  ee.tag
                , ee.result
                , ee.bucket_key
+               , LOWER(ee.segment) AS segments
                , replace(lower(CASE WHEN bucket_key like 'dx_%' then bucket_key
                     else 'dx_'||bucket_key end), '-') AS dd_device_ID_filtered
                , MIN(convert_timezone('UTC','America/Los_Angeles',ee.EXPOSURE_TIME)::date) AS day
@@ -22,7 +23,7 @@ AND experiment_version::INT = {{ version }}
 AND segment IN ({% for segment in segments %}'{{ segment }}'{% if not loop.last %}, {% endif %}{% endfor %})
 {%- endif %}
 AND convert_timezone('UTC','America/Los_Angeles',EXPOSURE_TIME) BETWEEN '{{ start_date }}' AND '{{ end_date }}'
-GROUP BY 1,2,3,4
+GROUP BY 1,2,3,4,5
 )
 
 , explore_page AS
@@ -95,6 +96,7 @@ WHERE convert_timezone('UTC','America/Los_Angeles',iguazu_timestamp) BETWEEN '{{
 , dp AS (
 SELECT DISTINCT 
     e.tag,
+    e.segments,
     e.dd_device_id_filtered, 
     cl.user_ID,
     subs.dashpass_monthly_trial_signup,
@@ -110,11 +112,12 @@ LEFT JOIN dp_subs subs
 
 , DP_trial_res AS
 (SELECT tag
+        , segments
         , COUNT(DISTINCT dd_device_id_filtered) AS exposure
         , SUM(dashpass_trial_signup) dashpass_trial_signup
         , SUM(dashpass_trial_signup)/count(distinct dd_device_id_filtered) dashpass_trial_signup_rate
 FROM dp
-GROUP BY 1
+GROUP BY 1, 2
 )
 
 , res AS
@@ -124,6 +127,7 @@ ORDER BY 1
 )
 
 SELECT r1.tag 
+        , r1.segments
         , r1.exposure
         , r1.dashpass_trial_signup
         , r1.dashpass_trial_signup_rate
@@ -139,4 +143,5 @@ FROM res r1
 LEFT JOIN res r2
     ON r1.tag != r2.tag
     AND r2.tag = 'control'
-ORDER BY 1 desc
+    AND r1.segments = r2.segments
+ORDER BY 1, 2 desc
