@@ -1,4 +1,14 @@
-drop table if exists proddb.fionafan.combined_experiment_metrics;
+-- drop table if exists proddb.fionafan.combined_experiment_metrics ;
+
+select distinct experiment_name,template_name from proddb.fionafan.experiment_metrics_results 
+where insert_timestamp = (select max(insert_timestamp) from proddb.fionafan.experiment_metrics_results) 
+and segments is null
+;
+
+select distinct experiment_name,template_name from proddb.fionafan.experiment_metrics_results 
+where insert_timestamp = (select max(insert_timestamp) from proddb.fionafan.experiment_metrics_results) 
+and segments is  not null
+;
 select * from proddb.fionafan.experiment_metrics_results 
 where insert_timestamp = (select max(insert_timestamp) from proddb.fionafan.experiment_metrics_results) ;
 -- and statsig_string = 'insufficient_data';
@@ -258,11 +268,11 @@ ORDER BY day;
 
 
 
-select distinct experiment_name
+select distinct experiment_name, segment, tag
 FROM proddb.public.fact_dedup_experiment_exposure ee
 WHERE 1=1 
 AND convert_timezone('UTC','America/Los_Angeles',EXPOSURE_TIME) BETWEEN '2025-08-24' AND '2025-09-30'
-AND experiment_name = '%cx_mobile_onboarding_preferences%'--'leaderboard_customer_favorites_carousel_v3'
+AND experiment_name like 'cx_mobile_onboarding_preferences%'--'leaderboard_customer_favorites_carousel_v3'
 AND experiment_version::INT = 1
 -- AND segment IN ('Users')
 AND tag <> 'overridden'

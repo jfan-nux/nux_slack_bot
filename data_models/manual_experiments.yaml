@@ -7,12 +7,12 @@ experiments:
     project_name: "Leaderboards uprank"
     experiment_name: "should_pin_leaderboard_carousel"
     description: "Uprank to feed"
-    start_date: "2025-08-21"
+    start_date: "2025-08-25"
     end_date: "2025-09-30"
     bucket_key: "consumer_id"
     template: "onboarding"
-    segments: ["Users"]
-    version: 1
+    segments: ["iOS"]
+    version: 2
     expired: false
   cx_mobile_onboarding_preferences:
     project_name: "Onboarding in-line"
