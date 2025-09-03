@@ -1,0 +1,27 @@
+# Include documentation
+include README.md
+include requirements.txt
+include env_template.txt
+
+# Include data files
+recursive-include data_models *.yaml
+recursive-include sql_scripts *.sql
+recursive-include experiment_runner/rendered_queries *.sql
+
+# Include shell scripts
+include *.sh
+include databricks_init_script.sh
+include runme.sh
+
+# Include configuration files
+include pyproject.toml
+
+# Exclude unnecessary files
+exclude .gitignore
+exclude .env
+exclude *.pyc
+exclude __pycache__/
+recursive-exclude * __pycache__
+recursive-exclude * *.py[co]
+exclude .DS_Store
+exclude Thumbs.db

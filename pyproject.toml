@@ -1,0 +1,71 @@
+[build-system]
+requires = ["setuptools>=45", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "nux_slack_bot"
+description = "NUX Slack Bot - Experiment analysis and reporting automation"
+readme = "README.md"
+requires-python = ">=3.8"
+license = {text = "MIT"}
+authors = [
+    {name = "Fiona Fan", email = "fiona.fan@doordash.com"}
+]
+keywords = ["databricks", "experiments", "analytics", "slack", "automation"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Operating System :: OS Independent",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+version = "0.1.1"
+
+# Dependencies will be read from requirements.txt
+dependencies = [
+    "snowflake-connector-python",
+    "pandas",
+    "pyyaml",
+    "python-dotenv",
+    "requests",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "pytest-cov",
+    "black",
+    "flake8",
+    "mypy",
+]
+spark = [
+    "pyspark",
+]
+polars = [
+    "polars",
+]
+
+[project.urls]
+Homepage = "https://github.com/jfan-nux/nux_slack_bot"
+Repository = "https://github.com/jfan-nux/nux_slack_bot"
+Issues = "https://github.com/jfan-nux/nux_slack_bot/issues"
+
+[project.scripts]
+run-experiments = "nux_slack_bot.run_experiments:main"
+create-metrics-table = "nux_slack_bot.create_combined_metrics_table:main"
+
+[tool.setuptools]
+packages = {find = {}}
+include-package-data = true
+
+[tool.setuptools.package-data]
+nux_slack_bot = [
+    "data_models/*.yaml",
+    "sql_scripts/*.sql", 
+    "sql_scripts/*/*.sql",
+    "experiment_runner/rendered_queries/*/*.sql",
+]
