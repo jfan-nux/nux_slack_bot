@@ -15,6 +15,10 @@ include runme.sh
 
 # Include configuration files
 include pyproject.toml
+<<<<<<< HEAD
+=======
+include setup.py
+>>>>>>> cbefed510043c1d31aebc48c7b4b0363b844015a
 
 # Exclude unnecessary files
 exclude .gitignore
