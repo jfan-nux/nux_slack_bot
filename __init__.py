@@ -8,7 +8,7 @@ This package provides tools for:
 - Managing experiment metadata and configurations
 """
 
-__version__ = "0.1.2"
+__version__ = "0.1.3"
 __author__ = "Fiona Fan"
 __email__ = "fiona.fan@doordash.com"
 
