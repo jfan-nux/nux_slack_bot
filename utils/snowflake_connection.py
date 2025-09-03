@@ -129,11 +129,16 @@ class SnowflakeHook:
 
         # Validate required parameters
         self._validate_params()
+        
+        # Normalize account name - remove .snowflakecomputing.com if present
+        # This handles cases where SNOWFLAKE_ACCOUNT env var includes the full domain
+        normalized_account = self.account.replace('.snowflakecomputing.com', '') if '.snowflakecomputing.com' in self.account else self.account
+        
         self.params = dict(
             user=self.user,
             password=self.password,
             schema=self.schema,
-            account=self.account,
+            account=normalized_account,  # Use normalized account without domain suffix
             database=self.database,
             warehouse=self.warehouse,
             role=self.role,
@@ -170,9 +175,14 @@ class SnowflakeHook:
 
             # Setup Snowflake connection parameters for Spark
             if self.spark is not None:
+                # Handle account URL properly - avoid double .snowflakecomputing.com
+                account_url = self.account
+                if not account_url.endswith('.snowflakecomputing.com'):
+                    account_url = f"{account_url}.snowflakecomputing.com"
+                
                 self.sfparams = dict(
-                    sfUrl=f"{self.account}.snowflakecomputing.com",
-                    sfAccount=self.account,
+                    sfUrl=account_url,
+                    sfAccount=normalized_account,  # Use normalized account name
                     sfUser=self.user,
                     sfPassword=self.password,
                     sfDatabase=self.database,
