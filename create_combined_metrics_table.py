@@ -7,6 +7,14 @@ Reads experiments from metadata, renders SQL template, creates table, and insert
 import yaml
 import os
 from datetime import datetime
+from pathlib import Path
+try:
+    # Python 3.9+
+    from importlib.resources import files
+except ImportError:
+    # Python 3.8 fallback
+    from importlib_resources import files
+
 from utils.snowflake_connection import SnowflakeHook
 from utils.logger import get_logger
 
@@ -14,10 +22,21 @@ logger = get_logger(__name__)
 
 def load_experiments():
     """Load experiment names from the metadata file."""
-    metadata_path = "data_models/manual_experiments.yaml"
-    
-    with open(metadata_path, 'r') as f:
-        data = yaml.safe_load(f)
+    try:
+        # Try package resource access first
+        package_files = files("nux_slack_bot.data_models")
+        metadata_file = package_files / "manual_experiments.yaml"
+        with metadata_file.open('r') as f:
+            data = yaml.safe_load(f)
+    except (ImportError, FileNotFoundError, ModuleNotFoundError):
+        # Fallback to relative path (for development)
+        metadata_path = Path(__file__).parent / "data_models" / "manual_experiments.yaml"
+        if not metadata_path.exists():
+            # Last resort: current directory relative path
+            metadata_path = Path("data_models/manual_experiments.yaml")
+        
+        with open(metadata_path, 'r') as f:
+            data = yaml.safe_load(f)
     
     # Extract experiment names that are not expired
     experiments = []
@@ -31,9 +50,21 @@ def load_experiments():
 def render_sql_template(experiments):
     """Render the SQL template with the list of experiments."""
     
-    # Read the template
-    with open('sql_scripts/combined_experiment_metrics.sql', 'r') as f:
-        template = f.read()
+    try:
+        # Try package resource access first
+        package_files = files("nux_slack_bot.sql_scripts")
+        template_file = package_files / "combined_experiment_metrics.sql"
+        with template_file.open('r') as f:
+            template = f.read()
+    except (ImportError, FileNotFoundError, ModuleNotFoundError):
+        # Fallback to relative path (for development)
+        template_path = Path(__file__).parent / "sql_scripts" / "combined_experiment_metrics.sql"
+        if not template_path.exists():
+            # Last resort: current directory relative path
+            template_path = Path("sql_scripts/combined_experiment_metrics.sql")
+        
+        with open(template_path, 'r') as f:
+            template = f.read()
     
     # Format experiment names for SQL IN clause
     experiment_list = "'" + "','".join(experiments) + "'"

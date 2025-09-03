@@ -23,7 +23,7 @@ classifiers = [
     "Operating System :: OS Independent",
     "Topic :: Software Development :: Libraries :: Python Modules",
 ]
-version = "0.1.1"
+version = "0.1.2"
 
 # Dependencies will be read from requirements.txt
 dependencies = [
@@ -32,6 +32,7 @@ dependencies = [
     "pyyaml",
     "python-dotenv",
     "requests",
+    "importlib-resources; python_version<'3.9'",
 ]
 
 [project.optional-dependencies]
