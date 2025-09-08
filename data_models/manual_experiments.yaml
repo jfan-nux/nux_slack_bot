@@ -13,7 +13,7 @@ experiments:
     template: "onboarding"
     segments: ["iOS"]
     version: 2
-    expired: false
+    expired: True
   cx_mobile_onboarding_preferences:
     project_name: "Onboarding in-line"
     experiment_name: "cx_mobile_onboarding_preferences"
@@ -23,6 +23,17 @@ experiments:
     bucket_key: "device_id"
     template: "onboarding"
     segments: ["iOS", "Android"]
+    version: 1
+    expired: True
+  reonboarding_process_kill_switch:
+    project_name: "Re-Onboarding (res cx)"
+    experiment_name: "reonboarding_process_kill_switch"
+    description: "Expand onboarding to “new again” users (mobile)"
+    start_date: "2025-09-08"
+    end_date: "2025-10-30"
+    bucket_key: "consumer_id"
+    template: "onboarding"
+    segments: ["Users"]
     version: 1
     expired: false
   

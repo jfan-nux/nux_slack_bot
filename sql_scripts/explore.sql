@@ -276,4 +276,13 @@ AND experiment_name like 'cx_mobile_onboarding_preferences%'--'leaderboard_custo
 AND experiment_version::INT = 1
 -- AND segment IN ('Users')
 AND tag <> 'overridden'
-GROUP BY all
+GROUP BY all;
+
+
+select page, count(1) cnt from iguazu.consumer.M_onboarding_page_view_ice where iguazu_timestamp>='2025-08-25' and dd_platform='Android' group by all;
+
+select distinct dd_platform from iguazu.consumer.M_onboarding_page_view_ice where iguazu_timestamp>='2025-08-25' and dd_platform is not null;
+
+
+select date_trunc(day, iguazu_timestamp) as day, count(1) cnt 
+from iguazu.consumer.M_onboarding_page_view_ice where iguazu_timestamp>='2025-01-01' and page = 'att' group by all order by 1;
