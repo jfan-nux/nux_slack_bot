@@ -13,7 +13,7 @@ experiments:
     template: "onboarding"
     segments: ["iOS"]
     version: 2
-    expired: false
+    expired: true
   cx_mobile_onboarding_preferences:
     project_name: "Onboarding in-line"
     experiment_name: "cx_mobile_onboarding_preferences"
@@ -24,5 +24,26 @@ experiments:
     template: "onboarding"
     segments: ["iOS", "Android"]
     version: 1
+    expired: true
+  cx_ios_reonboarding:
+    project_name: "Re-Onboarding (res cx)"
+    experiment_name: "cx_ios_reonboarding"
+    description: "Expand onboarding to “new again” users (mobile)"
+    start_date: "2025-09-08"
+    end_date: "2025-10-30"
+    bucket_key: "consumer_id"
+    template: "onboarding"
+    segments: ["Users"]
+    version: 1
     expired: false
   
+  should_enable_percentage_eta_threshold_job:
+    project_name: "FNY MS2"
+    experiment_name: "should_enable_percentage_eta_threshold_job"
+    description: "Expand coverage with percentile ETA logic"
+    start_date: "2025-09-10"
+    end_date: "2025-10-30"
+    bucket_key: "consumer_id"
+    template: "onboarding"
+    version: 5
+    expired: false
