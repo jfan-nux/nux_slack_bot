@@ -36,7 +36,7 @@ main() {
     
     # Step 1: Run experiments analysis
     print_status "Step 1: Running experiment analysis (run_experiments.py)"
-    if python3 run_experiments.py; then
+    if python3 run_experiments.py --workers 5; then
         print_success "Experiment analysis completed successfully"
     else
         print_error "Experiment analysis failed"
