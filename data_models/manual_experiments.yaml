@@ -15,7 +15,7 @@ experiments:
     template: "onboarding"
     segments: ["iOS"]
     version: 3
-    expired: true
+    expired: false
   cx_mobile_onboarding_preferences:
     project_name: "Onboarding in-line"
     experiment_name: "cx_mobile_onboarding_preferences"
@@ -36,7 +36,7 @@ experiments:
     bucket_key: "device_id"
     template: "onboarding"
     version: 1
-    expired: true
+    expired: false
   
   should_enable_percentage_eta_threshold_job:
     project_name: "FNY MS2"
@@ -47,7 +47,7 @@ experiments:
     bucket_key: "consumer_id"
     template: "onboarding"
     version: 5
-    expired: true
+    expired: false
 
 
   smart_app_banner_detection:
@@ -59,7 +59,7 @@ experiments:
     bucket_key: "device_id"
     template: "app_download"
     segments: ["Users"]
-    expired: true
+    expired: false
 
   special_menu_default_selection:
     project_name: "Storepage menu in context"
@@ -69,7 +69,7 @@ experiments:
     end_date: "2025-10-30"
     bucket_key: "device_id"
     template: "onboarding"
-    expired: true
+    expired: false
 
 
   speed_store_card_and_row_experiment:
