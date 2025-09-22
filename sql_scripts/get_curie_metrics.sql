@@ -1,4 +1,23 @@
-WITH latest_results AS (
+{#
+Jinja2 Template Variables expected:
+- experiments: list of dicts from metadata YAML, each with keys
+  - experiment_name (str)
+  - start_date (YYYY-MM-DD)
+  - end_date (YYYY-MM-DD)
+  - expired (bool)
+#}
+
+WITH experiments_metadata AS (
+    {%- for exp in experiments if not exp.expired %}
+    SELECT '{{ exp.experiment_name }}' AS experiment_name,
+           TO_DATE('{{ exp.start_date }}') AS start_date,
+           TO_DATE('{{ exp.end_date }}') AS end_date
+    {%- if not loop.last %}
+    UNION ALL
+    {%- endif %}
+    {%- endfor %}
+),
+latest_results AS (
     -- Get all results and identify the latest dimension_value for each metric/dimension combination
     SELECT
         dear.*,  -- Select all columns from dimension_experiment_analysis_results
@@ -52,10 +71,13 @@ WITH latest_results AS (
     END AS stat_sig
     FROM
         proddb.public.dimension_experiment_analysis_results dear
+        JOIN experiments_metadata em 
+            ON dear.experiment_name = em.experiment_name
+            AND CAST(dear.analyzed_at AS DATE) BETWEEN em.start_date AND em.end_date
+
         LEFT JOIN CONFIGURATOR_PROD.PUBLIC.TALLEYRAND_METRICS tm ON dear.metric_name = tm.name
     WHERE
-        dear.experiment_name IN ({experiment_name_list}) --,'should_pin_leaderboard_carousel','cx_mobile_onboarding_preferences' 
-        AND dear.metric_name IS NOT NULL
+        dear.metric_name IS NOT NULL
         AND dear.dimension_name is null
 ),
 control_data AS (

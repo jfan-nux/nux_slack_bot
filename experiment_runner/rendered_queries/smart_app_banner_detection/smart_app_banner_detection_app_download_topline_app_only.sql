@@ -1,11 +1,4 @@
-{#
-Jinja2 Template Variables:
-- experiment_name: {{ experiment_name }}
-- start_date: {{ start_date }}
-- end_date: {{ end_date }}
-- version: {{ version }}
-- segments: {{ segments }}
-#}
+
 
 
 WITH exposure AS (
@@ -17,16 +10,9 @@ SELECT distinct ee.tag
               , case when cast(custom_attributes:consumer_id as varchar) not like 'dx_%' then cast(custom_attributes:consumer_id as varchar) else null end as consumer_id
               , MIN(convert_timezone('UTC','America/Los_Angeles',ee.EXPOSURE_TIME)::date) AS day
 FROM proddb.public.fact_dedup_experiment_exposure ee
-WHERE experiment_name = '{{ experiment_name }}'
-{%- if version is not none %}
-AND experiment_version = {{ version }}
-{%- endif %}
-{%- if segments %}
-AND segment IN ({% for segment in segments %}'{{ segment }}'{% if not loop.last %}, {% endif %}{% endfor %})
-{%- else %}
-and segment = 'Users'
-{%- endif %}
-AND convert_timezone('UTC','America/Los_Angeles',EXPOSURE_TIME) BETWEEN '{{ start_date }}' AND '{{ end_date }}'
+WHERE experiment_name = 'smart_app_banner_detection'
+AND segment IN ('Users')
+AND convert_timezone('UTC','America/Los_Angeles',EXPOSURE_TIME) BETWEEN '2025-09-17' AND '2025-10-30'
 GROUP BY 1,2,3,4,5
 )
 
@@ -36,7 +22,7 @@ SELECT DISTINCT  replace(lower(CASE WHEN DD_DEVICE_ID like 'dx_%' then DD_DEVICE
        , convert_timezone('UTC','America/Los_Angeles',timestamp)::date AS day
        , SOCIAL_PROVIDER AS Source
 from segment_events_RAW.consumer_production.social_login_success
-WHERE convert_timezone('UTC','America/Los_Angeles',timestamp) BETWEEN '{{ start_date }}' AND '{{ end_date }}'
+WHERE convert_timezone('UTC','America/Los_Angeles',timestamp) BETWEEN '2025-09-17' AND '2025-10-30'
 AND SOCIAL_PROVIDER IN ('google-plus','facebook','apple')
 
 UNION 
@@ -46,7 +32,7 @@ SELECT DISTINCT replace(lower(CASE WHEN DD_DEVICE_ID like 'dx_%' then DD_DEVICE_
        , convert_timezone('UTC','America/Los_Angeles',timestamp)::date AS day
        , 'email' AS source
 from segment_events_RAW.consumer_production.doordash_login_success  
-WHERE  convert_timezone('UTC','America/Los_Angeles',timestamp) BETWEEN '{{ start_date }}' AND '{{ end_date }}'
+WHERE  convert_timezone('UTC','America/Los_Angeles',timestamp) BETWEEN '2025-09-17' AND '2025-10-30'
  
 UNION 
 
@@ -55,7 +41,7 @@ SELECT DISTINCT  replace(lower(CASE WHEN DD_DEVICE_ID like 'dx_%' then DD_DEVICE
        , convert_timezone('UTC','America/Los_Angeles',timestamp)::date AS day
        , 'bypass_login_known' AS source
 from segment_events_raw.consumer_production.be_login_success  
-WHERE convert_timezone('UTC','America/Los_Angeles',timestamp) BETWEEN '{{ start_date }}' AND '{{ end_date }}'
+WHERE convert_timezone('UTC','America/Los_Angeles',timestamp) BETWEEN '2025-09-17' AND '2025-10-30'
  AND type = 'login'
  AND sub_Type = 'bypass_login_wrong_credentials'
  AND bypass_login_category = 'bypass_login_magiclink'
@@ -67,7 +53,7 @@ SELECT DISTINCT  replace(lower(CASE WHEN DD_DEVICE_ID like 'dx_%' then DD_DEVICE
        , convert_timezone('UTC','America/Los_Angeles',timestamp)::date AS day
        , 'bypass_login_unknown' AS source
 from segment_events_raw.consumer_production.be_login_success  
-WHERE convert_timezone('UTC','America/Los_Angeles',timestamp) BETWEEN '{{ start_date }}' AND '{{ end_date }}'
+WHERE convert_timezone('UTC','America/Los_Angeles',timestamp) BETWEEN '2025-09-17' AND '2025-10-30'
  AND type = 'login'
  AND sub_Type = 'bypass_login_wrong_credentials'
  AND bypass_login_category = 'bypass_login_unknown'
@@ -80,7 +66,7 @@ SELECT DISTINCT  replace(lower(CASE WHEN DD_DEVICE_ID like 'dx_%' then DD_DEVICE
        , convert_timezone('UTC','America/Los_Angeles',timestamp)::date AS day
        , 'bypass_login_option_known' AS source
 from segment_events_raw.consumer_production.be_login_success  
-WHERE convert_timezone('UTC','America/Los_Angeles',timestamp) BETWEEN '{{ start_date }}' AND '{{ end_date }}'
+WHERE convert_timezone('UTC','America/Los_Angeles',timestamp) BETWEEN '2025-09-17' AND '2025-10-30'
  AND type = 'login'
  AND sub_Type = 'bypass_login_option'
  AND BYPASS_LOGIN_CATEGORY = 'bypass_login_magiclink'
@@ -92,7 +78,7 @@ SELECT DISTINCT  replace(lower(CASE WHEN DD_DEVICE_ID like 'dx_%' then DD_DEVICE
        , convert_timezone('UTC','America/Los_Angeles',timestamp)::date AS day
        , 'bypass_login_option_unknown' AS source
 from segment_events_raw.consumer_production.be_login_success  
-WHERE convert_timezone('UTC','America/Los_Angeles',timestamp) BETWEEN '{{ start_date }}' AND '{{ end_date }}'
+WHERE convert_timezone('UTC','America/Los_Angeles',timestamp) BETWEEN '2025-09-17' AND '2025-10-30'
  AND type = 'login'
  AND sub_Type = 'bypass_login_option'
  AND BYPASS_LOGIN_CATEGORY = 'bypass_login_unknown' 
@@ -105,7 +91,7 @@ SELECT DISTINCT replace(lower(CASE WHEN DD_DEVICE_ID like 'dx_%' then DD_DEVICE_
        , convert_timezone('UTC','America/Los_Angeles',timestamp)::date AS day
        , 'guided_login' AS source
 from segment_events_RAW.consumer_production.be_login_success  
-WHERE convert_timezone('UTC','America/Los_Angeles',timestamp) BETWEEN '{{ start_date }}' AND '{{ end_date }}'
+WHERE convert_timezone('UTC','America/Los_Angeles',timestamp) BETWEEN '2025-09-17' AND '2025-10-30'
 AND sub_type = 'guided_login_v2'
 )
 
@@ -116,7 +102,7 @@ AND sub_type = 'guided_login_v2'
        , convert_timezone('UTC','America/Los_Angeles',timestamp)::date AS day
        , SOCIAL_PROVIDER AS Source
 from segment_events_RAW.consumer_production.social_login_new_user 
-WHERE convert_timezone('UTC','America/Los_Angeles',timestamp) BETWEEN '{{ start_date }}' AND '{{ end_date }}'
+WHERE convert_timezone('UTC','America/Los_Angeles',timestamp) BETWEEN '2025-09-17' AND '2025-10-30'
 AND SOCIAL_PROVIDER IN ('google-plus','facebook','apple')
 
 UNION 
@@ -126,7 +112,7 @@ SELECT DISTINCT replace(lower(CASE WHEN DD_DEVICE_ID like 'dx_%' then DD_DEVICE_
        , convert_timezone('UTC','America/Los_Angeles',timestamp)::date AS day
        , 'email' AS source
 from segment_events_RAW.consumer_production.doordash_signup_success 
-WHERE convert_timezone('UTC','America/Los_Angeles',timestamp) BETWEEN '{{ start_date }}' AND '{{ end_date }}'
+WHERE convert_timezone('UTC','America/Los_Angeles',timestamp) BETWEEN '2025-09-17' AND '2025-10-30'
 )
 
 , adjust_links_straight_to_app AS (
@@ -139,7 +125,7 @@ WHERE convert_timezone('UTC','America/Los_Angeles',timestamp) BETWEEN '{{ start_
     iguazu.server_events_production.m_deep_link
   WHERE
     DEEP_LINK_URL like '%device_id%'
-    AND convert_timezone('UTC','America/Los_Angeles',iguazu_timestamp) BETWEEN '{{ start_date }}' AND '{{ end_date }}'
+    AND convert_timezone('UTC','America/Los_Angeles',iguazu_timestamp) BETWEEN '2025-09-17' AND '2025-10-30'
 )
 
 , adjust_link_app_store AS (  
@@ -155,7 +141,7 @@ SELECT distinct replace(lower(CASE WHEN dd_device_id like 'dx_%' then dd_device_
 FROM edw.growth.fact_singular_mobile_events 
 WHERE 1=1
     AND event_properties LIKE '%web_consumer_id%'
-and event_date BETWEEN '{{ start_date }}' AND '{{ end_date }}'
+and event_date BETWEEN '2025-09-17' AND '2025-10-30'
 order by event_date desc
 )
 )
@@ -198,9 +184,9 @@ order by event_date desc
     JOIN dimension_deliveries dd
     ON a.order_cart_id = dd.order_cart_id
     AND dd.is_filtered_core = 1
-    AND convert_timezone('UTC','America/Los_Angeles',dd.created_at) BETWEEN '{{ start_date }}' AND '{{ end_date }}'
+    AND convert_timezone('UTC','America/Los_Angeles',dd.created_at) BETWEEN '2025-09-17' AND '2025-10-30'
   WHERE 
-    convert_timezone('UTC','America/Los_Angeles',a.timestamp) BETWEEN '{{ start_date }}' AND '{{ end_date }}'
+    convert_timezone('UTC','America/Los_Angeles',a.timestamp) BETWEEN '2025-09-17' AND '2025-10-30'
 )
 
 , app_orders AS
@@ -228,7 +214,7 @@ order by event_date desc
     , gov * 0.01 as gov
   FROM 
     exposure_with_both_ids e
-    LEFT JOIN app_orders o ON e.app_device_id = o.dd_device_ID_filtered AND e.day <= o.day AND convert_timezone('UTC','America/Los_Angeles',o.created_at) BETWEEN '{{ start_date }}' AND '{{ end_date }}'
+    LEFT JOIN app_orders o ON e.app_device_id = o.dd_device_ID_filtered AND e.day <= o.day AND convert_timezone('UTC','America/Los_Angeles',o.created_at) BETWEEN '2025-09-17' AND '2025-10-30'
   WHERE 
     TAG != 'reserve'
 )
@@ -247,7 +233,7 @@ order by event_date desc
 --     , gov * 0.01 as gov
 --   FROM 
 --       exposure_with_both_ids e
---       LEFT JOIN mweb_orders o ON e.dd_device_ID_filtered = o.dd_device_ID_filtered AND e.day <= o.day AND convert_timezone('UTC','America/Los_Angeles',o.created_at) BETWEEN '{{ start_date }}' AND '{{ end_date }}'
+--       LEFT JOIN mweb_orders o ON e.dd_device_ID_filtered = o.dd_device_ID_filtered AND e.day <= o.day AND convert_timezone('UTC','America/Los_Angeles',o.created_at) BETWEEN '2025-09-17' AND '2025-10-30'
 --   WHERE 
 --       TAG != 'reserve'
 -- )

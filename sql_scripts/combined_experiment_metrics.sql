@@ -123,6 +123,8 @@ WITH curie_results AS (
         t.treatment_stat_sig AS statsig_string,
         t.analyzed_at AS analysis_timestamp,
         t.analysis_name,
+        -- created_at: for curie, use analyzed_at
+        t.analyzed_at AS created_at,
         t.treatment_impact_relative_lower AS confidence_interval_lower,
         t.treatment_impact_relative_upper AS confidence_interval_upper,
         t.treatment_label AS label,
@@ -191,6 +193,8 @@ mode_results AS (
         statsig_string,
         insert_timestamp AS analysis_timestamp,
         template_name AS analysis_name,
+        -- created_at: use insert_timestamp to match available schema
+        insert_timestamp AS created_at,
         confidence_interval_lower,
         confidence_interval_upper,
         NULL AS label,
@@ -220,6 +224,7 @@ SELECT
     statsig_string,
     analysis_timestamp,
     analysis_name,
+    created_at,
     confidence_interval_lower,
     confidence_interval_upper,
     label,
@@ -245,6 +250,7 @@ SELECT
     statsig_string,
     analysis_timestamp,
     analysis_name,
+    created_at,
     confidence_interval_lower,
     confidence_interval_upper,
     label,

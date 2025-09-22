@@ -18,7 +18,9 @@ SELECT distinct ee.tag
               , MIN(convert_timezone('UTC','America/Los_Angeles',ee.EXPOSURE_TIME)::date) AS day
 FROM proddb.public.fact_dedup_experiment_exposure ee
 WHERE experiment_name = '{{ experiment_name }}'
+{%- if version is not none %}
 AND experiment_version = {{ version }}
+{%- endif %}
 {%- if segments %}
 AND segment IN ({% for segment in segments %}'{{ segment }}'{% if not loop.last %}, {% endif %}{% endfor %})
 {%- else %}

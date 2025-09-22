@@ -1,11 +1,4 @@
-{#
-Jinja2 Template Variables:
-- experiment_name: {{ experiment_name }}
-- start_date: {{ start_date }}
-- end_date: {{ end_date }}
-- version: {{ version }}
-- segments: {{ segments }}
-#}
+
 
 WITH exposure AS (
 SELECT distinct ee.tag
@@ -16,16 +9,9 @@ SELECT distinct ee.tag
               , case when cast(custom_attributes:consumer_id as varchar) not like 'dx_%' then cast(custom_attributes:consumer_id as varchar) else null end as consumer_id
               , MIN(convert_timezone('UTC','America/Los_Angeles',ee.EXPOSURE_TIME)::date) AS day
 FROM proddb.public.fact_dedup_experiment_exposure ee
-WHERE experiment_name = '{{ experiment_name }}'
-{%- if version is not none %}
-AND experiment_version = {{ version }}
-{%- endif %}
-{%- if segments %}
-AND segment IN ({% for segment in segments %}'{{ segment }}'{% if not loop.last %}, {% endif %}{% endfor %})
-{%- else %}
-and segment = 'Users'
-{%- endif %}
-AND convert_timezone('UTC','America/Los_Angeles',EXPOSURE_TIME) BETWEEN '{{ start_date }}' AND '{{ end_date }}'
+WHERE experiment_name = 'smart_app_banner_detection'
+AND segment IN ('Users')
+AND convert_timezone('UTC','America/Los_Angeles',EXPOSURE_TIME) BETWEEN '2025-09-17' AND '2025-10-30'
 GROUP BY 1,2,3,4,5
 )
 
@@ -37,7 +23,7 @@ GROUP BY 1,2,3,4,5
     ,replace(lower(CASE WHEN split_part(split_part(DEEP_LINK_URL,'dd_device_id%3D',2),'%',1) like 'dx_%' then split_part(split_part(DEEP_LINK_URL,'dd_device_id%3D',2),'%',1) else 'dx_'||split_part(split_part(DEEP_LINK_URL,'dd_device_id%3D',2),'%',1) end), '-') as mweb_id
   FROM iguazu.server_events_production.m_deep_link
   WHERE DEEP_LINK_URL like '%device_id%'
-    AND convert_timezone('UTC','America/Los_Angeles',iguazu_timestamp) BETWEEN '{{ start_date }}' AND '{{ end_date }}'
+    AND convert_timezone('UTC','America/Los_Angeles',iguazu_timestamp) BETWEEN '2025-09-17' AND '2025-10-30'
 )
 
 , adjust_link_app_store AS (  
@@ -53,7 +39,7 @@ SELECT distinct replace(lower(CASE WHEN dd_device_id like 'dx_%' then dd_device_
 FROM edw.growth.fact_singular_mobile_events 
 WHERE 1=1
     AND event_properties LIKE '%web_consumer_id%'
-and event_date BETWEEN '{{ start_date }}' AND '{{ end_date }}'
+and event_date BETWEEN '2025-09-17' AND '2025-10-30'
 order by event_date desc
 )
 )
@@ -107,7 +93,7 @@ SELECT DISTINCT replace(lower(CASE WHEN DD_DEVICE_ID like 'dx_%' then DD_DEVICE_
        , SOCIAL_PROVIDER AS Source
        , user_id 
 from segment_events_RAW.consumer_production.social_login_new_user 
-WHERE convert_timezone('UTC','America/Los_Angeles',timestamp) BETWEEN '{{ start_date }}' AND '{{ end_date }}'
+WHERE convert_timezone('UTC','America/Los_Angeles',timestamp) BETWEEN '2025-09-17' AND '2025-10-30'
 AND SOCIAL_PROVIDER IN ('google-plus','facebook','apple')
 
 UNION 
@@ -118,7 +104,7 @@ SELECT DISTINCT replace(lower(CASE WHEN DD_DEVICE_ID like 'dx_%' then DD_DEVICE_
        , 'email' AS source
        , user_id 
 from segment_events_RAW.consumer_production.doordash_signup_success 
-WHERE convert_timezone('UTC','America/Los_Angeles',timestamp) BETWEEN '{{ start_date }}' AND '{{ end_date }}'
+WHERE convert_timezone('UTC','America/Los_Angeles',timestamp) BETWEEN '2025-09-17' AND '2025-10-30'
 )
 
 , SUMA AS 

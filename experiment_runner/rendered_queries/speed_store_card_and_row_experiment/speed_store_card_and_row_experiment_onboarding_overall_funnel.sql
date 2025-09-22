@@ -1,12 +1,5 @@
 --------------------- experiment exposure
-{#
-Jinja2 Template Variables:
-- experiment_name: {{ experiment_name }}
-- start_date: {{ start_date }}
-- end_date: {{ end_date }}
-- version: {{ version }}
-- segments: {{ segments }}
-#}
+
 WITH exposure AS
 (SELECT  ee.tag
                , ee.result
@@ -14,15 +7,9 @@ WITH exposure AS
                , MIN(convert_timezone('UTC','America/Los_Angeles',ee.EXPOSURE_TIME)::date) AS day
                , MIN(convert_timezone('UTC','America/Los_Angeles',ee.EXPOSURE_TIME)) EXPOSURE_TIME
 FROM proddb.public.fact_dedup_experiment_exposure ee
-WHERE experiment_name = '{{ experiment_name }}'
-{%- if version is not none %}
-AND experiment_version::INT = {{ version }}
-{%- endif %}
-{%- if segments %}
-AND segment IN ({% for segment in segments %}'{{ segment }}'{% if not loop.last %}, {% endif %}{% endfor %})
-{%- endif %}
+WHERE experiment_name = 'speed_store_card_and_row_experiment'
 AND tag <> 'overridden'
-AND convert_timezone('UTC','America/Los_Angeles',EXPOSURE_TIME) BETWEEN '{{ start_date }}' AND '{{ end_date }}'
+AND convert_timezone('UTC','America/Los_Angeles',EXPOSURE_TIME) BETWEEN '2025-09-17' AND '2025-10-30'
 GROUP BY all
 )
 
@@ -31,14 +18,14 @@ GROUP BY all
        , convert_timezone('UTC','America/Los_Angeles',iguazu_timestamp)::date AS day
        , iguazu_user_id as user_id
 from IGUAZU.SERVER_EVENTS_PRODUCTION.M_STORE_CONTENT_PAGE_LOAD
-WHERE convert_timezone('UTC','America/Los_Angeles',iguazu_timestamp) BETWEEN '{{ start_date }}' AND '{{ end_date }}'
+WHERE convert_timezone('UTC','America/Los_Angeles',iguazu_timestamp) BETWEEN '2025-09-17' AND '2025-10-30'
 )
 
 , store_page AS
 (SELECT DISTINCT consumer_id
        , convert_timezone('UTC','America/Los_Angeles',timestamp)::date AS day
 from segment_events_RAW.consumer_production.m_store_page_load
-WHERE convert_timezone('UTC','America/Los_Angeles',timestamp) BETWEEN '{{ start_date }}' AND '{{ end_date }}'
+WHERE convert_timezone('UTC','America/Los_Angeles',timestamp) BETWEEN '2025-09-17' AND '2025-10-30'
 )
 
 
@@ -46,14 +33,14 @@ WHERE convert_timezone('UTC','America/Los_Angeles',timestamp) BETWEEN '{{ start_
 (SELECT DISTINCT consumer_id
        , convert_timezone('UTC','America/Los_Angeles',iguazu_timestamp)::date AS day
 from iguazu.consumer.m_order_cart_page_load
-WHERE convert_timezone('UTC','America/Los_Angeles',iguazu_timestamp) BETWEEN '{{ start_date }}' AND '{{ end_date }}'
+WHERE convert_timezone('UTC','America/Los_Angeles',iguazu_timestamp) BETWEEN '2025-09-17' AND '2025-10-30'
 )
 
 , checkout_page AS
 (SELECT DISTINCT consumer_id
        , convert_timezone('UTC','America/Los_Angeles',timestamp)::date AS day
 from segment_events_RAW.consumer_production.m_checkout_page_load
-WHERE convert_timezone('UTC','America/Los_Angeles',timestamp) BETWEEN '{{ start_date }}' AND '{{ end_date }}'
+WHERE convert_timezone('UTC','America/Los_Angeles',timestamp) BETWEEN '2025-09-17' AND '2025-10-30'
 )
 
 , explore AS

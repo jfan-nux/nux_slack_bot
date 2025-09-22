@@ -1,12 +1,5 @@
 --------------------- experiment exposure
-{#
-Jinja2 Template Variables:
-- experiment_name: {{ experiment_name }}
-- start_date: {{ start_date }}
-- end_date: {{ end_date }}
-- version: {{ version }}
-- segments: {{ segments }}
-#}
+
 WITH experiment AS (
     SELECT bucket_key,
         max(a.result) AS bucket,
@@ -15,14 +8,8 @@ WITH experiment AS (
         first_exposure_time::date AS first_exposure_date
     FROM proddb.public.fact_dedup_experiment_exposure a    
     WHERE 1=1
-    AND a.experiment_name = '{{ experiment_name }}'
-    AND convert_timezone('UTC', 'America/Los_Angeles', a.exposure_time)::date >= '{{ start_date }}'
-    {%- if version is not none %}
-    AND experiment_version = {{ version }}
-    {%- endif %}
-{%- if segments %}
-    AND segment IN ({% for segment in segments %}'{{ segment }}'{% if not loop.last %}, {% endif %}{% endfor %})
-{%- endif %}
+    AND a.experiment_name = 'speed_store_card_and_row_experiment'
+    AND convert_timezone('UTC', 'America/Los_Angeles', a.exposure_time)::date >= '2025-09-17'
     AND tag <> 'overridden'
     GROUP BY all
     HAVING count(distinct a.result) = 1
@@ -44,7 +31,7 @@ WITH experiment AS (
     END AS system_push_opt_in
   FROM
     edw.consumer.dimension_consumer_device_push_settings_scd3
-  WHERE scd_start_date >= '{{ start_date }}'
+  WHERE scd_start_date >= '2025-09-17'
     AND experience = 'doordash'
 )
 

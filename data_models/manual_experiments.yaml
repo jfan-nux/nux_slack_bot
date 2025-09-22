@@ -1,6 +1,8 @@
 # Manual list of experiments to process
 # Updated with correct experiment_name values for Snowflake queries
 # if segments is missing then it includes all segments
+settings:
+  combined_experiment_metrics_table: proddb.fionafan.combined_experiment_metrics
 
 experiments:
   should_pin_leaderboard_carousel:
@@ -13,7 +15,7 @@ experiments:
     template: "onboarding"
     segments: ["iOS"]
     version: 3
-    expired: false
+    expired: true
   cx_mobile_onboarding_preferences:
     project_name: "Onboarding in-line"
     experiment_name: "cx_mobile_onboarding_preferences"
@@ -34,7 +36,7 @@ experiments:
     bucket_key: "device_id"
     template: "onboarding"
     version: 1
-    expired: false
+    expired: true
   
   should_enable_percentage_eta_threshold_job:
     project_name: "FNY MS2"
@@ -45,4 +47,37 @@ experiments:
     bucket_key: "consumer_id"
     template: "onboarding"
     version: 5
+    expired: true
+
+
+  smart_app_banner_detection:
+    project_name: "Smart app banner redirect"
+    experiment_name: "smart_app_banner_detection"
+    description: "Inform Cx who have the app downloaded to open it via safari s smart app banner"
+    start_date: "2025-09-17"
+    end_date: "2025-10-30"
+    bucket_key: "device_id"
+    template: "app_download"
+    segments: ["Users"]
+    expired: true
+
+  special_menu_default_selection:
+    project_name: "Storepage menu in context"
+    experiment_name: "special_menu_default_selection"
+    description: "Default to correct storepage"
+    start_date: "2025-09-15"
+    end_date: "2025-10-30"
+    bucket_key: "device_id"
+    template: "onboarding"
+    expired: true
+
+
+  speed_store_card_and_row_experiment:
+    project_name: "Speed metadata"
+    experiment_name: "speed_store_card_and_row_experiment"
+    description: "Visually badge fastest stores"
+    start_date: "2025-09-17"
+    end_date: "2025-10-30"
+    bucket_key: "consumer_id"
+    template: "onboarding"
     expired: false

@@ -8,11 +8,9 @@ WITH exposure AS
                , MIN(convert_timezone('UTC','America/Los_Angeles',ee.EXPOSURE_TIME)::date) AS day
                , MIN(convert_timezone('UTC','America/Los_Angeles',ee.EXPOSURE_TIME)) EXPOSURE_TIME
 FROM proddb.public.fact_dedup_experiment_exposure ee
-WHERE experiment_name = 'reonboarding_process_kill_switch'
-AND experiment_version::INT = 1
-AND segment IN ('Users')
+WHERE experiment_name = 'speed_store_card_and_row_experiment'
 AND tag <> 'overridden'
-AND convert_timezone('UTC','America/Los_Angeles',EXPOSURE_TIME) BETWEEN '2025-09-08' AND '2025-10-30'
+AND convert_timezone('UTC','America/Los_Angeles',EXPOSURE_TIME) BETWEEN '2025-09-17' AND '2025-10-30'
 GROUP BY all
 
 )
@@ -21,7 +19,7 @@ GROUP BY all
 SELECT  DISTINCT  cast(iguazu_timestamp as date) AS day
       , consumer_id
 from iguazu.consumer.m_onboarding_start_promo_page_view_ice
-WHERE iguazu_timestamp BETWEEN '2025-09-08' AND '2025-10-30'
+WHERE iguazu_timestamp BETWEEN '2025-09-17' AND '2025-10-30'
 )
 
 -- onboarding iguazu.comsumer
@@ -32,7 +30,7 @@ SELECT DISTINCT
       , consumer_id
 from  iguazu.consumer.m_onboarding_start_promo_page_click_ice
 
-WHERE iguazu_timestamp BETWEEN '2025-09-08' AND '2025-10-30'
+WHERE iguazu_timestamp BETWEEN '2025-09-17' AND '2025-10-30'
 )
 
 , notification_view AS (
@@ -40,7 +38,7 @@ SELECT
     DISTINCT   cast(iguazu_timestamp as date) AS day
       , consumer_id
 from  iguazu.consumer.M_onboarding_page_view_ice
-WHERE iguazu_timestamp BETWEEN '2025-09-08' AND '2025-10-30'
+WHERE iguazu_timestamp BETWEEN '2025-09-17' AND '2025-10-30'
 and page = 'notification'
 )
 
@@ -49,7 +47,7 @@ SELECT DISTINCT   cast(iguazu_timestamp as date) AS day
       , consumer_id
 -- from datalake.iguazu_consumer.M_onboarding_page_click_ice
 from iguazu.consumer.M_onboarding_page_click_ice
-WHERE iguazu_timestamp BETWEEN '2025-09-08' AND '2025-10-30'
+WHERE iguazu_timestamp BETWEEN '2025-09-17' AND '2025-10-30'
 and page = 'notification'
 )
 
@@ -58,7 +56,7 @@ SELECT
     DISTINCT   cast(iguazu_timestamp as date) AS day
       , consumer_id
 from  iguazu.consumer.M_onboarding_page_view_ice
-WHERE iguazu_timestamp BETWEEN '2025-09-08' AND '2025-10-30'
+WHERE iguazu_timestamp BETWEEN '2025-09-17' AND '2025-10-30'
 and page = 'marketingSMS'
 )
 
@@ -67,7 +65,7 @@ SELECT DISTINCT   cast(iguazu_timestamp as date) AS day
       , consumer_id
 -- from datalake.iguazu_consumer.M_onboarding_page_click_ice
 from iguazu.consumer.M_onboarding_page_click_ice
-WHERE iguazu_timestamp BETWEEN '2025-09-08' AND '2025-10-30'
+WHERE iguazu_timestamp BETWEEN '2025-09-17' AND '2025-10-30'
 and page = 'marketingSMS'
 )
 
@@ -75,7 +73,7 @@ and page = 'marketingSMS'
 SELECT DISTINCT   cast(iguazu_timestamp as date) AS day
       , consumer_id
 from  iguazu.consumer.M_onboarding_page_view_ice
-WHERE iguazu_timestamp  BETWEEN '2025-09-08' AND '2025-10-30'
+WHERE iguazu_timestamp  BETWEEN '2025-09-17' AND '2025-10-30'
 and page = 'att'
 )
 
@@ -83,7 +81,7 @@ and page = 'att'
 SELECT DISTINCT   cast(iguazu_timestamp as date) AS day
       , consumer_id
 from  iguazu.consumer.M_onboarding_page_click_ice
-WHERE iguazu_timestamp  BETWEEN '2025-09-08' AND '2025-10-30'
+WHERE iguazu_timestamp  BETWEEN '2025-09-17' AND '2025-10-30'
 and page = 'att'
 )
 
@@ -91,14 +89,14 @@ and page = 'att'
 SELECT DISTINCT   cast(iguazu_timestamp as date) AS day
       , consumer_id
 from iguazu.consumer.m_onboarding_end_promo_page_view_ice
-WHERE iguazu_timestamp BETWEEN '2025-09-08' AND '2025-10-30'
+WHERE iguazu_timestamp BETWEEN '2025-09-17' AND '2025-10-30'
 )
 
 , end_page_click AS (
 SELECT DISTINCT   cast(iguazu_timestamp as date) AS day
       , consumer_id
 from iguazu.consumer.m_onboarding_end_promo_page_click_ice
-WHERE iguazu_timestamp BETWEEN '2025-09-08' AND '2025-10-30'
+WHERE iguazu_timestamp BETWEEN '2025-09-17' AND '2025-10-30'
 )
 
 , funnel AS (

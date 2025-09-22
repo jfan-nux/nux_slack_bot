@@ -93,12 +93,12 @@ CREATE TABLE IF NOT EXISTS proddb.fionafan.combined_experiment_metrics (
     statsig_string VARCHAR(50),
     analysis_timestamp TIMESTAMP_NTZ,
     analysis_name VARCHAR(255),
+    created_at TIMESTAMP_NTZ,
     confidence_interval_lower FLOAT,
     confidence_interval_upper FLOAT,
     label VARCHAR(255),
     template_rank INTEGER,
     metric_rank INTEGER,
-    created_at TIMESTAMP_NTZ DEFAULT CURRENT_TIMESTAMP(),
     updated_at TIMESTAMP_NTZ DEFAULT CURRENT_TIMESTAMP()
 );
 """
@@ -166,6 +166,7 @@ def main():
                 statsig_string,
                 analysis_timestamp,
                 analysis_name,
+                created_at,
                 confidence_interval_lower,
                 confidence_interval_upper,
                 label,

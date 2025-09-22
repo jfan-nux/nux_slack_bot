@@ -1,25 +1,28 @@
---------------------- experiment exposure
 
+
+--------------------- experiment exposure
 WITH experiment AS (
-    SELECT bucket_key,
+    SELECT replace(lower(CASE WHEN bucket_key like 'dx_%' then bucket_key
+                    else 'dx_'||bucket_key end), '-') AS dd_device_ID_filtered,
+        bucket_key,
+        LOWER(segment) AS segments,
         max(a.result) AS bucket,
         min(a.exposure_time)::date AS first_exposure_date_utc,
         min(convert_timezone('UTC','America/Los_Angeles', a.exposure_time)) AS first_exposure_time,
         first_exposure_time::date AS first_exposure_date
     FROM proddb.public.fact_dedup_experiment_exposure a    
+
     WHERE 1=1
-    AND a.experiment_name = 'reonboarding_process_kill_switch'
-    AND convert_timezone('UTC', 'America/Los_Angeles', a.exposure_time)::date >= '2025-09-08'
-    AND experiment_version = 1
-    AND segment IN ('Users')
-    AND tag <> 'overridden'
-    GROUP BY all
+    AND a.experiment_name = 'special_menu_default_selection'
+    AND convert_timezone('UTC', 'America/Los_Angeles', a.exposure_time)::date >= '2025-09-15'
+    GROUP BY 1,2,3
     HAVING count(distinct a.result) = 1
 )
 
 , device_level_temp AS (
   SELECT
-    consumer_id,
+    replace(lower(CASE WHEN device_id like 'dx_%' then device_id
+                    else 'dx_'||device_id end), '-') AS dd_device_ID_filtered,
     scd_start_date AS event_ts,
     CASE
       WHEN system_level_status = 'off'
@@ -33,50 +36,55 @@ WITH experiment AS (
     END AS system_push_opt_in
   FROM
     edw.consumer.dimension_consumer_device_push_settings_scd3
-  WHERE scd_start_date >= '2025-09-08'
+  WHERE scd_start_date >= '2025-09-15'
     AND experience = 'doordash'
 )
 
 , device_level AS (
   SELECT
-    consumer_id,
+    dd_device_ID_filtered,
     event_ts,
     max(system_push_opt_out) AS system_push_opt_out,
     max(system_push_opt_in) AS system_push_opt_in
   FROM
     device_level_temp
-  GROUP BY all
+  GROUP BY
+    1, 2
 )
 
 , rollup as (
-  SELECT a.bucket_key as consumer_id,
+  SELECT a.dd_device_ID_filtered , 
+    a.bucket_key,
     a.bucket,
+    a.segments,
     b.event_ts,
     coalesce(b.system_push_opt_out, 0) AS system_level_push_opt_out,
-    coalesce(b.system_push_opt_in, 0) AS system_level_push_opt_in
+    coalesce(b.system_push_opt_in, 0) AS system_level_push_opt_in,
   FROM experiment a 
   left join device_level b 
-  on a.bucket_key = b.consumer_id
+  on a.dd_device_ID_filtered = b.dd_device_ID_filtered
 ) 
 
 , opt_in_res AS (
 select BUCKET 
-, count(distinct consumer_id) as total_cx
+, segments
+, count(distinct dd_device_ID_filtered) as total_cx
 , sum(system_level_push_opt_out) as system_level_push_opt_out
-, sum(system_level_push_opt_out)/ count(distinct consumer_id) as system_level_push_opt_out_pct
+, sum(system_level_push_opt_out)/ count(distinct dd_device_ID_filtered) as system_level_push_opt_out_pct
 , sum(system_level_push_opt_in) as system_level_push_opt_in
-, sum(system_level_push_opt_in)/ count(distinct consumer_id) as system_level_push_opt_in_pct
+, sum(system_level_push_opt_in)/ count(distinct dd_device_ID_filtered) as system_level_push_opt_in_pct
 from rollup 
-group by all
+group by 1, 2
 )
 
 , res AS (
 SELECT o.*
 FROM opt_in_res o
-ORDER BY 1
+ORDER BY 1, 2
 )
 
 SELECT r1.bucket
+        , r1.segments
         , r1.total_cx AS exposure
         , r1.system_level_push_opt_out
         , r1.system_level_push_opt_out_pct
@@ -97,4 +105,5 @@ FROM res r1
 LEFT JOIN res r2
     ON r1.bucket != r2.bucket
     AND r2.bucket = 'control'
-ORDER BY 1
+    AND r1.segments = r2.segments
+ORDER BY 1, 2

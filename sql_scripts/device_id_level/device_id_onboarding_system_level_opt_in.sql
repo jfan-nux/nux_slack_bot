@@ -22,7 +22,9 @@ WITH experiment AS (
     WHERE 1=1
     AND a.experiment_name = '{{ experiment_name }}'
     AND convert_timezone('UTC', 'America/Los_Angeles', a.exposure_time)::date >= '{{ start_date }}'
+    {%- if version is not none %}
     AND experiment_version = {{ version }}
+    {%- endif %}
 {%- if segments %}
     AND segment IN ({% for segment in segments %}'{{ segment }}'{% if not loop.last %}, {% endif %}{% endfor %})
 {%- endif %}

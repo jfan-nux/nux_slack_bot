@@ -81,7 +81,7 @@ def render_template_file(template_path: str, config: dict) -> str:
         experiment_name=config['experiment_name'],
         start_date=config['start_date'],
         end_date=config['end_date'],
-        version=config['version'],
+        version=config.get('version'),  # Optional version
         bucket_key=config['bucket_key'],
         segments=config.get('segments', [])  # Pass segments array, default to empty list
     )

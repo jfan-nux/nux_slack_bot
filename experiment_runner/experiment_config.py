@@ -44,8 +44,8 @@ def load_experiment_config(experiment_key: str) -> dict:
     
     experiment_config = data['experiments'][experiment_key]
     
-    # Validate required fields
-    required_fields = ['experiment_name', 'start_date', 'end_date', 'bucket_key', 'template', 'version']
+    # Validate required fields (make 'version' optional)
+    required_fields = ['experiment_name', 'start_date', 'end_date', 'bucket_key', 'template']
     for field in required_fields:
         if field not in experiment_config:
             raise ValueError(f"Required field '{field}' missing from experiment config")

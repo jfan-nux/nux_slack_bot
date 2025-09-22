@@ -1,12 +1,5 @@
 --------------------- experiment exposure
-{#
-Jinja2 Template Variables:
-- experiment_name: {{ experiment_name }}
-- start_date: {{ start_date }}
-- end_date: {{ end_date }}
-- version: {{ version }}
-- segments: {{ segments }}
-#}
+
 WITH exposure AS
 (SELECT  ee.tag
                , ee.result
@@ -14,15 +7,9 @@ WITH exposure AS
                , MIN(convert_timezone('UTC','America/Los_Angeles',ee.EXPOSURE_TIME)::date) AS day
                , MIN(convert_timezone('UTC','America/Los_Angeles',ee.EXPOSURE_TIME)) EXPOSURE_TIME
 FROM proddb.public.fact_dedup_experiment_exposure ee
-WHERE experiment_name = '{{ experiment_name }}'
-{%- if version is not none %}
-AND experiment_version::INT = {{ version }}
-{%- endif %}
-{%- if segments %}
-AND segment IN ({% for segment in segments %}'{{ segment }}'{% if not loop.last %}, {% endif %}{% endfor %})
-{%- endif %}
+WHERE experiment_name = 'speed_store_card_and_row_experiment'
 AND tag <> 'overridden'
-AND convert_timezone('UTC','America/Los_Angeles',EXPOSURE_TIME) BETWEEN '{{ start_date }}' AND '{{ end_date }}'
+AND convert_timezone('UTC','America/Los_Angeles',EXPOSURE_TIME) BETWEEN '2025-09-17' AND '2025-10-30'
 GROUP BY all
 )
 , orders AS
@@ -37,8 +24,8 @@ FROM segment_events_raw.consumer_production.order_cart_submit_received a
     JOIN dimension_deliveries dd
     ON a.order_cart_id = dd.order_cart_id
     AND dd.is_filtered_core = 1
-    AND convert_timezone('UTC','America/Los_Angeles',dd.created_at) BETWEEN '{{ start_date }}' AND '{{ end_date }}'
-WHERE convert_timezone('UTC','America/Los_Angeles',a.timestamp) BETWEEN '{{ start_date }}' AND '{{ end_date }}'
+    AND convert_timezone('UTC','America/Los_Angeles',dd.created_at) BETWEEN '2025-09-17' AND '2025-10-30'
+WHERE convert_timezone('UTC','America/Los_Angeles',a.timestamp) BETWEEN '2025-09-17' AND '2025-10-30'
 
 )
 
@@ -84,7 +71,7 @@ LEFT JOIN orders o
     ON e.bucket_key = o.consumer_id 
     --AND e.day <= o.day
     AND o.day BETWEEN DATEADD('day',-28,current_date) AND DATEADD('day',-1,current_date) -- past 28 days orders
--- WHERE e.day <= DATEADD('day',-28,'{{ end_date }}') --- exposed at least 28 days ago
+-- WHERE e.day <= DATEADD('day',-28,'2025-10-30') --- exposed at least 28 days ago
 GROUP BY all
 ORDER BY 1
 )

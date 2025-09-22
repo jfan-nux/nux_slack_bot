@@ -14,8 +14,8 @@ class ExperimentMetric:
     # Experiment identifiers
     experiment_name: str
     start_date: str
+
     end_date: str
-    version: int
     
     # Metric details
     granularity: str  # 'consumer_id' or 'device_id'
@@ -23,6 +23,7 @@ class ExperimentMetric:
     metric_name: str
     treatment_arm: str  # 'treatment', 'variant_1', etc. (no control)
     metric_type: str  # 'rate' or 'continuous'
+    version: Optional[int] = None
     dimension: Optional[str] = None  # e.g., 'app', 'app_clip', None
     segments: Optional[str] = None  # e.g., 'ios', 'android'
     template_rank: Optional[int] = None  # From metrics_metadata.yaml
@@ -206,7 +207,7 @@ def parse_results(results: List[dict], template_name: str, config: dict) -> List
                 experiment_name=config['experiment_name'],
                 start_date=config['start_date'],
                 end_date=config['end_date'],
-                version=config['version'],
+                version=config.get('version', -1),
                 
                 # Metric details
                 granularity=config['bucket_key'],

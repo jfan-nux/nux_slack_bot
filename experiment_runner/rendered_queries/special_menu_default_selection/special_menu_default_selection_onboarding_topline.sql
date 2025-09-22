@@ -4,18 +4,21 @@ WITH exposure AS
 (SELECT  ee.tag
                , ee.result
                , ee.bucket_key
+               , LOWER(ee.segment) AS segments
+               , replace(lower(CASE WHEN bucket_key like 'dx_%' then bucket_key
+                    else 'dx_'||bucket_key end), '-') AS dd_device_ID_filtered
                , MIN(convert_timezone('UTC','America/Los_Angeles',ee.EXPOSURE_TIME)::date) AS day
                , MIN(convert_timezone('UTC','America/Los_Angeles',ee.EXPOSURE_TIME)) EXPOSURE_TIME
 FROM proddb.public.fact_dedup_experiment_exposure ee
-WHERE experiment_name = 'reonboarding_process_kill_switch'
-AND experiment_version::INT = 1
-AND segment IN ('Users')
-AND tag <> 'overridden'
-AND convert_timezone('UTC','America/Los_Angeles',EXPOSURE_TIME) BETWEEN '2025-09-08' AND '2025-10-30'
-GROUP BY all
+WHERE experiment_name = 'special_menu_default_selection'
+AND convert_timezone('UTC','America/Los_Angeles',EXPOSURE_TIME) BETWEEN '2025-09-15' AND '2025-10-30'
+GROUP BY 1,2,3,4,5
 )
+
 , orders AS
-(SELECT DISTINCT dd.creator_id as consumer_id
+(SELECT DISTINCT a.DD_DEVICE_ID
+        , replace(lower(CASE WHEN a.DD_device_id like 'dx_%' then a.DD_device_id
+                    else 'dx_'||a.DD_device_id end), '-') AS dd_device_ID_filtered
         , convert_timezone('UTC','America/Los_Angeles',a.timestamp)::date as day
         , dd.delivery_ID
         , dd.is_first_ordercart_DD
@@ -26,23 +29,23 @@ FROM segment_events_raw.consumer_production.order_cart_submit_received a
     JOIN dimension_deliveries dd
     ON a.order_cart_id = dd.order_cart_id
     AND dd.is_filtered_core = 1
-    AND convert_timezone('UTC','America/Los_Angeles',dd.created_at) BETWEEN '2025-09-08' AND '2025-10-30'
-WHERE convert_timezone('UTC','America/Los_Angeles',a.timestamp) BETWEEN '2025-09-08' AND '2025-10-30'
+    AND convert_timezone('UTC','America/Los_Angeles',dd.created_at) BETWEEN '2025-09-15' AND '2025-10-30'
+WHERE convert_timezone('UTC','America/Los_Angeles',a.timestamp) BETWEEN '2025-09-15' AND '2025-10-30'
 
 )
 
-
 , checkout AS
 (SELECT  e.tag
-        , COUNT(distinct e.bucket_key) as exposure_onboard
+        , e.segments
+        , COUNT(distinct e.dd_device_ID_filtered) as exposure_onboard
         , COUNT(DISTINCT CASE WHEN is_filtered_core = 1 THEN o.delivery_ID ELSE NULL END) orders
         , COUNT(DISTINCT CASE WHEN is_first_ordercart_DD = 1 AND is_filtered_core = 1 THEN o.delivery_ID ELSE NULL END) new_Cx
-        , COUNT(DISTINCT CASE WHEN is_filtered_core = 1 THEN o.delivery_ID ELSE NULL END) /  COUNT(DISTINCT e.bucket_key) order_rate
-        , COUNT(DISTINCT CASE WHEN is_first_ordercart_DD = 1 AND is_filtered_core = 1 THEN o.delivery_ID ELSE NULL END) /  COUNT(DISTINCT e.bucket_key) new_cx_rate
+        , COUNT(DISTINCT CASE WHEN is_filtered_core = 1 THEN o.delivery_ID ELSE NULL END) /  COUNT(DISTINCT e.dd_device_ID_filtered) order_rate
+        , COUNT(DISTINCT CASE WHEN is_first_ordercart_DD = 1 AND is_filtered_core = 1 THEN o.delivery_ID ELSE NULL END) /  COUNT(DISTINCT e.dd_device_ID_filtered) new_cx_rate
         , SUM(variable_profit) AS variable_profit
-        , SUM(variable_profit) / COUNT(DISTINCT e.bucket_key) AS VP_per_device
+        , SUM(variable_profit) / COUNT(DISTINCT e.dd_device_ID_filtered) AS VP_per_device
         , SUM(gov) AS gov
-        , SUM(gov) / COUNT(DISTINCT e.bucket_key) AS gov_per_device
+        , SUM(gov) / COUNT(DISTINCT e.dd_device_ID_filtered) AS gov_per_device
         
         -- Statistical variables for p-value calculation
         -- For continuous variables: need std dev and sample size
@@ -56,26 +59,25 @@ WHERE convert_timezone('UTC','America/Los_Angeles',a.timestamp) BETWEEN '2025-09
         
 FROM exposure e
 LEFT JOIN orders o
-    ON e.bucket_key = o.consumer_id 
+    ON e.dd_device_ID_filtered = o.dd_device_ID_filtered 
     AND e.day <= o.day
 WHERE TAG NOT IN ('internal_test','reserved')
-GROUP BY all
-ORDER BY 1)
-
-
+GROUP BY 1, 2
+ORDER BY 1, 2)
 
 ,  MAU AS (
 SELECT  e.tag
-        , COUNT(DISTINCT o.consumer_id) as MAU
-        , COUNT(DISTINCT o.consumer_id) / COUNT(DISTINCT e.bucket_key) as MAU_rate
+        , e.segments
+        , COUNT(DISTINCT o.dd_device_ID_filtered) as MAU
+        , COUNT(DISTINCT o.dd_device_ID_filtered) / COUNT(DISTINCT e.dd_device_ID_filtered) as MAU_rate
 FROM exposure e
 LEFT JOIN orders o
-    ON e.bucket_key = o.consumer_id 
+    ON e.dd_device_ID_filtered = o.dd_device_ID_filtered 
     --AND e.day <= o.day
     AND o.day BETWEEN DATEADD('day',-28,current_date) AND DATEADD('day',-1,current_date) -- past 28 days orders
 -- WHERE e.day <= DATEADD('day',-28,'2025-10-30') --- exposed at least 28 days ago
-GROUP BY all
-ORDER BY 1
+GROUP BY 1, 2
+ORDER BY 1, 2
 )
 
 , res AS
@@ -84,11 +86,12 @@ ORDER BY 1
         , m.mau_rate
 FROM checkout c
 JOIN MAU m 
-  on c.tag = m.tag
-ORDER BY 1
+  on c.tag = m.tag AND c.segments = m.segments
+ORDER BY 1, 2
 )
 
 SELECT r1.tag 
+        , r1.segments
         , r1.exposure_onboard AS exposure
         , r1.orders
         , r1.order_rate
@@ -134,4 +137,5 @@ FROM res r1
 LEFT JOIN res r2
     ON r1.tag != r2.tag
     AND r2.tag = 'control'
-ORDER BY 1 desc
+    AND r1.segments = r2.segments
+ORDER BY 1, 2 desc

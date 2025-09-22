@@ -1,41 +1,17 @@
 --------------------- experiment exposure
-{#
-Jinja2 Template Variables:
-- experiment_name: {{ experiment_name }}
-- start_date: {{ start_date }}
-- end_date: {{ end_date }}
-- version: {{ version }}
-- segments: {{ segments }}
-#}
+
 WITH exposure AS
 (SELECT  ee.tag
                , ee.result
                , ee.bucket_key
-               , LOWER(ee.segment) AS segments
-               , replace(lower(CASE WHEN bucket_key like 'dx_%' then bucket_key
-                    else 'dx_'||bucket_key end), '-') AS dd_device_ID_filtered
                , MIN(convert_timezone('UTC','America/Los_Angeles',ee.EXPOSURE_TIME)::date) AS day
                , MIN(convert_timezone('UTC','America/Los_Angeles',ee.EXPOSURE_TIME)) EXPOSURE_TIME
 FROM proddb.public.fact_dedup_experiment_exposure ee
-WHERE experiment_name = '{{ experiment_name }}'
-{%- if version is not none %}
-AND experiment_version::INT = {{ version }}
-{%- endif %}
-{%- if segments %}
-AND segment IN ({% for segment in segments %}'{{ segment }}'{% if not loop.last %}, {% endif %}{% endfor %})
-{%- endif %}
-AND convert_timezone('UTC','America/Los_Angeles',EXPOSURE_TIME) BETWEEN '{{ start_date }}' AND '{{ end_date }}'
-GROUP BY 1,2,3,4,5
+WHERE experiment_name = 'speed_store_card_and_row_experiment'
+AND convert_timezone('UTC','America/Los_Angeles',EXPOSURE_TIME) BETWEEN '2025-09-17' AND '2025-10-30'
+GROUP BY all
 )
 
-, explore_page AS
-(SELECT DISTINCT  replace(lower(CASE WHEN DD_DEVICE_ID like 'dx_%' then DD_DEVICE_ID
-                         else 'dx_'||DD_DEVICE_ID end), '-') AS dd_device_ID_filtered
-       , convert_timezone('UTC','America/Los_Angeles',iguazu_timestamp)::date AS day
-       , iguazu_user_id as user_id
-from IGUAZU.SERVER_EVENTS_PRODUCTION.M_STORE_CONTENT_PAGE_LOAD
-WHERE convert_timezone('UTC','America/Los_Angeles',iguazu_timestamp) BETWEEN '{{ start_date }}' AND '{{ end_date }}'
-)
 
 , dp_subs AS (
     SELECT DISTINCT 
@@ -90,36 +66,30 @@ WHERE convert_timezone('UTC','America/Los_Angeles',iguazu_timestamp) BETWEEN '{{
     FROM edw.consumer.fact_consumer_subscription__daily dsa
     LEFT JOIN proddb.static.dashpass_annual_plan_ids b
         ON dsa.consumer_subscription_plan_id = b.consumer_subscription_plan_id
-    WHERE dsa.dte BETWEEN '{{ start_date }}' AND '{{ end_date }}'
+    WHERE dsa.dte BETWEEN '2025-09-17' AND '2025-10-30'
     GROUP BY 
-        1,2
+        all
 )
 
 , dp AS (
 SELECT DISTINCT 
     e.tag,
-    e.segments,
-    e.dd_device_id_filtered, 
-    cl.user_ID,
+    e.bucket_key, 
     subs.dashpass_monthly_trial_signup,
     subs.dashpass_annual_trial_signup,
     subs.dashpass_monthly_trial_signup + subs.dashpass_annual_trial_signup AS dashpass_trial_signup
 FROM exposure e
-JOIN explore_page cl
-    ON e.dd_device_ID_filtered = cl.dd_device_ID_filtered 
-    AND e.day <= cl.day
 LEFT JOIN dp_subs subs
-    ON try_to_number(cl.user_ID) = try_to_number(subs.consumer_ID)
+    ON try_to_number(e.bucket_key) = try_to_number(subs.consumer_ID)
 )
 
 , DP_trial_res AS
 (SELECT tag
-        , segments
-        , COUNT(DISTINCT dd_device_id_filtered) AS exposure
+        , COUNT(DISTINCT bucket_key) AS exposure
         , SUM(dashpass_trial_signup) dashpass_trial_signup
-        , SUM(dashpass_trial_signup)/count(distinct dd_device_id_filtered) dashpass_trial_signup_rate
+        , SUM(dashpass_trial_signup)/count(distinct bucket_key) dashpass_trial_signup_rate
 FROM dp
-GROUP BY 1, 2
+GROUP BY all
 )
 
 , res AS
@@ -129,7 +99,6 @@ ORDER BY 1
 )
 
 SELECT r1.tag 
-        , r1.segments
         , r1.exposure
         , r1.dashpass_trial_signup
         , r1.dashpass_trial_signup_rate
@@ -145,5 +114,4 @@ FROM res r1
 LEFT JOIN res r2
     ON r1.tag != r2.tag
     AND r2.tag = 'control'
-    AND r1.segments = r2.segments
-ORDER BY 1, 2 desc
+ORDER BY 1 desc

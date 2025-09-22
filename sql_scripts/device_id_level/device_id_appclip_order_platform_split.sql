@@ -13,6 +13,9 @@ select tag
 , min(exposure_time::date) as day
 FROM PRODDB.PUBLIC.FACT_DEDUP_EXPERIMENT_EXPOSURE 
 where experiment_name = '{{ experiment_name }}'
+{%- if version is not none %}
+and experiment_version = {{ version }}
+{%- endif %}
 and exposure_time between '{{ start_date }}' and '{{ end_date }}'
 and bucket_key_type = 'device_id'
 {%- if segments %}
